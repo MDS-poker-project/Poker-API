@@ -1,18 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Header } from '@nestjs/common';
 import { TablesService } from './tables.service';
 import { CreateTableDto } from './dto/create-table.dto';
 import { UpdateTableDto } from './dto/update-table.dto';
 import { PlayersService } from 'src/players/players.service';
-import { Deck } from 'src/commons/deck.model';
+import { Deck } from 'src/entities/deck.entity';
 
 @Controller('tables')
 export class TablesController {
-  constructor(private readonly tablesService: TablesService,
-                private playersService: PlayersService[],
-                private nbPlayers: number,
-                private state: string,
-                private deck: Deck,
-    ) {}
+  constructor(private readonly tablesService: TablesService) {}
 
   @Get()
   findAll() {
@@ -25,8 +20,9 @@ export class TablesController {
   }
 
 
-  @Get(':id/join')
-  join(@Param('id') tableId: string) {
-    return this.tablesService.join(tableId, playerId);
-  }
+  // @Get(':id/join')
+  // join(@Param('id') tableId: string) {
+  //   return this.tablesService.join(tableId);
+
+  // }
 }

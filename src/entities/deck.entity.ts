@@ -1,10 +1,13 @@
-import { Card } from './card.model';
+import { Card } from './card.entity';
 
 
 export class Deck {
+  cards : Card[]
   constructor(
-    private cards : Card[]
-  ) {}
+     
+  ) {
+    this. createDeck()
+  }
 
   public shuffle() {
     // Shuffle the deck
@@ -16,6 +19,7 @@ export class Deck {
 
   private createDeck() {
     // Create a deck
+    this.cards.push(new Card('A', 'Spades'))
   }
 
 

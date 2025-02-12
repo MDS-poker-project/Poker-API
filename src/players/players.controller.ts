@@ -5,8 +5,7 @@ import { UpdatePlayerDto } from './dto/update-player.dto';
 
 @Controller('players')
 export class PlayersController {
-  constructor(private readonly players: PlayersService
-    private ) {}
+  constructor(private readonly playersService: PlayersService) {}
 
   @Post()
   create(@Body() createPlayerDto: CreatePlayerDto) {
