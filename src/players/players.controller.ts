@@ -1,35 +1,29 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
 import { PlayersService } from './players.service';
-import { CreatePlayerDto } from './dto/create-player.dto';
-import { UpdatePlayerDto } from './dto/update-player.dto';
 
-@Controller('players')
+@Controller()
 export class PlayersController {
-  constructor(private readonly players: PlayersService
-    private ) {}
+  constructor(
+    private readonly playersService: PlayersService,
+  ) { }
 
-  @Post()
-  create(@Body() createPlayerDto: CreatePlayerDto) {
-    return this.playersService.create(createPlayerDto);
-  }
-
-  @Get()
+  @Get('')
   findAll() {
     return this.playersService.findAll();
   }
 
-  @Get(':id')
+  @Get('profil/:id')
   findOne(@Param('id') id: string) {
     return this.playersService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePlayerDto: UpdatePlayerDto) {
-    return this.playersService.update(+id, updatePlayerDto);
+  @Get('actions')
+  actions() {
+    return this.playersService.getActions();
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.playersService.remove(+id);
+  @Post('actions/:name')
+  setAction(@Param('name') name: string, id: number) { //Récupérer l'id du joueur
+    return this.playersService.setAction(name, id);
   }
 }
