@@ -3,7 +3,7 @@ import { TablesService } from './tables.service';
 import { CreateTableDto } from './dto/create-table.dto';
 import { UpdateTableDto } from './dto/update-table.dto';
 import { PlayersService } from 'src/players/players.service';
-import { Deck } from 'src/entities/deck.entity';
+import { Deck } from 'src/tables/entities/deck.entity';
 
 @Controller('tables')
 export class TablesController {
