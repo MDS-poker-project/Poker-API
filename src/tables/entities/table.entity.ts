@@ -1,8 +1,11 @@
+import { Exclude } from "class-transformer";
 import { Player } from "src/entities/player.entity";
 import { Deck } from "src/tables/entities/deck.entity";
 
 export class Table {
     id: number
+
+    @Exclude()
     deck: Deck
     players: Player[]
     name: string
