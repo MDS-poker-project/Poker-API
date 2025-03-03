@@ -3,7 +3,7 @@ import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 export class PlayerDto {
     @IsString()
     @IsNotEmpty()
-    name: string;
+    username: string;
 
     @IsString()
     @IsNotEmpty()

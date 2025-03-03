@@ -7,16 +7,16 @@ export class Player {
     id: number
 
     @Column()
-    name: string;
+    username: string;
 
     @Column()
     password: string;
 
-    @Column()
+    @Column({ nullable: false })
     state: string;
 
     @AfterInsert()
     after_insert() { //Se déclenche automatiquement après l'insertion
-        console.log(`Owner ${this.id} created`)
+        console.log(`Player ${this.id} created`)
     }
 }

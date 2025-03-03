@@ -7,7 +7,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Player } from './entities/player.entity';
 import { TablesService } from './tables/tables.service';
 import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/AuthGuard';
 
@@ -21,7 +20,6 @@ import { AuthGuard } from './auth/AuthGuard';
       synchronize: true
     }),
     AuthModule,
-    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService, TablesService,

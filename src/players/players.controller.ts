@@ -12,9 +12,9 @@ export class PlayersController {
     return this.playersService.findAll();
   }
 
-  @Get('profil/:id')
-  findOne(@Param('id') id: string) {
-    return this.playersService.findOne(+id);
+  @Get('profil/:username')
+  findOne(@Param('username') username: string) {
+    return this.playersService.findOne(username);
   }
 
   @Get('actions')
