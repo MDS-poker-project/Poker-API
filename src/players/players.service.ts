@@ -4,43 +4,42 @@ import { Repository } from 'typeorm';
 import { Player } from 'src/entities/player.entity';
 import * as bcrypt from 'bcrypt';
 import { BadRequestException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class PlayersService {
   [x: string]: any;
   constructor(@InjectRepository(Player)
-  private repo: Repository<Player>) { }
+  private repo: Repository<Player>,
+    private jwtService: JwtService
+  ) { }
 
   async create(owner: any) {
-    let user = await this.repo.findOne({ where: { name: owner.name } });
+    let user = await this.repo.findOne({ where: { username: owner.username } });
     if (user != undefined) {
       throw new BadRequestException("User already exists");
     }
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(owner.password, salt);
 
-    const newUser = this.repo.create({ name: owner.name, password: hashedPassword });
-    this.repo.save(newUser);
-  }
+    const newUser = this.repo.create({ username: owner.username, password: hashedPassword, state: "" });
+    const savedUser = await this.repo.save(newUser);
+    if (!savedUser) {
+      throw new BadRequestException("User creation failed");
+    }
 
-  async login(owner: any) {
-    let user = await this.repo.findOne({ where: { name: owner.name } });
-    if (user == undefined) {
-      throw new BadRequestException("User not found");
-    }
-    if (await bcrypt.compare(owner.password, owner.password)) {
-      return user;
-    } else {
-      throw new BadRequestException("Invalid password");
-    }
+    const payload = { name: newUser.username, sub: newUser.id };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
   }
 
   findAll() {
     return this.repo.find();
   }
 
-  findOne(id: number) {
-    return this.repo.findOne({ where: { "id": id } });
+  findOne(username: string) {
+    return this.repo.findOne({ where: { "username": username } });
   }
 
   getActions() {

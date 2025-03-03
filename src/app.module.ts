@@ -7,13 +7,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Player } from './entities/player.entity';
 import { TablesService } from './tables/tables.service';
 import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/AuthGuard';
 import { DeckService } from './deck/deck.service';
 
+
 @Module({
-  imports: [TablesModule,
+  imports: [PlayersModule, TablesModule,
     TypeOrmModule.forRoot({
       type: "sqlite",
       database: "db.sqlite",
@@ -21,7 +21,6 @@ import { DeckService } from './deck/deck.service';
       synchronize: true
     }),
     AuthModule,
-    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService, TablesService,

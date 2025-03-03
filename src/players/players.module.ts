@@ -10,4 +10,4 @@ import { Player } from 'src/entities/player.entity';
   providers: [PlayersService],
   exports: [PlayersService, TypeOrmModule],
 })
-export class PlayersModule {}
+export class PlayersModule { }

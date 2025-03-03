@@ -1,27 +1,30 @@
 
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
+import { PlayersService } from 'src/players/players.service';
+import { BadRequestException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
+    private playerService: PlayersService,
     private jwtService: JwtService
-  ) {}
+  ) { }
 
-  async signIn(
-    username: string,
-    pass: string,
-  ): Promise<{ access_token: string }> {
-    const user = await this.usersService.findOne(username);
-    console.log(user)
-    if (user?.password !== pass) {
-      throw new UnauthorizedException();
+  async signIn(player: any): Promise<{ access_token: string }> {
+    const user = await this.playerService.findOne(player.username);
+    console.log(player)
+    if (user == undefined) {
+      throw new BadRequestException("User not found");
     }
-    const payload = { sub: user.userId, username: user.username };
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
+    if (await bcrypt.compare(player.password, user.password)) {
+      const payload = { name: player.name, sub: user.id };
+      return {
+        access_token: this.jwtService.sign(payload),
+      };
+    } else {
+      throw new UnauthorizedException("Invalid password");
+    }
   }
 }
