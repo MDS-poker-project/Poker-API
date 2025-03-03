@@ -7,7 +7,7 @@ import { PlayersService } from 'src/players/players.service';
 export class TablesService {
   tables: Table[] = []
   constructor(private deckService: DeckService, private playersService: PlayersService) {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 4; i++) {
       this.createTable();
     }
   }
@@ -38,20 +38,24 @@ export class TablesService {
     return this.tables[tableId];
   }
 
-  fold(tableId: string, playerId: string) {
+  fold(tableId: number, playerId: number) {
     return `This action folds the user ${playerId} from the table ${tableId}`;
   }
 
-  call(tableId: string, playerId: string) {
+  call(tableId: number, playerId: number) {
     return `This action calls the user ${playerId} from the table ${tableId}`;
   }
 
-  raise(tableId: string, playerId: string) {
+  raise(tableId: number, playerId: number) {
     return `This action raises the user ${playerId} from the table ${tableId}`;
   }
 
-  leave(tableId: string, playerId: string) {
-    return `This action leaves the user ${playerId} from the table ${tableId}`;
+  leave(tableId: number, playerId: number) {
+    if (!this.tables[tableId]) {
+      throw new Error(`Table ${tableId} not found`);
+    }
+    this.tables[tableId].players = this.tables[tableId].players.filter(p => p.id !== playerId);
+    return this.tables[tableId];
   }
 
   startGame(tableId: string) {

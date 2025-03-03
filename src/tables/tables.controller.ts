@@ -20,4 +20,10 @@ export class TablesController {
     const playerId = req.player.sub;
     return this.tablesService.join(tableId, playerId);
   }
+
+  @Get(':id/leave')
+  leave(@Param('id') tableId: number, @Request() req: any) {
+    const playerId = req.player.sub;
+    return this.tablesService.leave(tableId, playerId);
+  }
 }
