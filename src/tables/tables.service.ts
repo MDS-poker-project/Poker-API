@@ -1,16 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { Table } from './entities/table.entity';
+import { PlayersService } from 'src/players/players.service';
 
 @Injectable()
 export class TablesService {
   tables : Table[] = []
-  constructor() {
-    const names = ['Table 1', 'Table 2', 'Table 3']
-    for (let name of names) {
+  constructor(
+
+  ) {
+    const types = ['Amator', 'Intermediair', 'Professionel']
+    for (let name of types) {
       const element = new Table(name);
       this.tables.push(element)
-      
     }
+
   }
 
   findAll() {
