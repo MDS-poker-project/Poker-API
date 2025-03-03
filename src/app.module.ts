@@ -8,6 +8,8 @@ import { Player } from './entities/player.entity';
 import { TablesService } from './tables/tables.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthGuard } from './auth/AuthGuard';
 
 @Module({
   imports: [TablesModule,
@@ -21,6 +23,10 @@ import { UsersModule } from './users/users.module';
     UsersModule,
   ],
   controllers: [AppController],
-  providers: [AppService, TablesService],
+  providers: [AppService, TablesService,
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    }],
 })
 export class AppModule { }

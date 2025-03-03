@@ -5,9 +5,7 @@ import { PlayersService } from 'src/players/players.service';
 
 @Controller('tables')
 export class TablesController {
-  constructor(private readonly tablesService: TablesService,
-    private playersService: PlayersService,
-    ) {}
+  constructor(private readonly tablesService: TablesService) {}
 
   @Get()
   findAll() {
@@ -20,9 +18,9 @@ export class TablesController {
   }
 
 
-  @Get(':id/join')
-  join(@Param('id') tableId: string, playerId = 0) {
-    return this.tablesService.join(tableId, playerId);
+  // @Get(':id/join')
+  // join(@Param('id') tableId: string, playerId = 0) {
+  //   return this.tablesService.join(tableId, playerId);
 
-  }
+  // }
 }
