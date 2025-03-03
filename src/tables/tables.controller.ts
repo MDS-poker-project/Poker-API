@@ -18,9 +18,9 @@ export class TablesController {
   }
 
 
-  // @Get(':id/join')
-  // join(@Param('id') tableId: string, playerId = 0) {
-  //   return this.tablesService.join(tableId, playerId);
+  @Get(':id/join')
+  join(@Param('id') tableId: string, playerId: string) {
+    return this.tablesService.join(tableId, playerId);
 
-  // }
+  }
 }

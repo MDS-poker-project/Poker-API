@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/AuthGuard';
+import { DeckService } from './deck/deck.service';
 
 @Module({
   imports: [TablesModule,
@@ -27,6 +28,7 @@ import { AuthGuard } from './auth/AuthGuard';
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
-    }],
+    },
+    DeckService],
 })
 export class AppModule { }

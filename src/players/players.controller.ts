@@ -13,7 +13,7 @@ export class PlayersController {
   }
 
   @Get('profil/:id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.playersService.findOne(+id);
   }
 
