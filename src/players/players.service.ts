@@ -7,6 +7,7 @@ import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class PlayersService {
+  [x: string]: any;
   constructor(@InjectRepository(Player)
   private repo: Repository<Player>) { }
 

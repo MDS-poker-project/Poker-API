@@ -1,9 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Header } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { TablesService } from './tables.service';
-import { CreateTableDto } from './dto/create-table.dto';
-import { UpdateTableDto } from './dto/update-table.dto';
 import { PlayersService } from 'src/players/players.service';
-import { Deck } from 'src/tables/entities/deck.entity';
+
 
 @Controller('tables')
 export class TablesController {
@@ -21,8 +19,8 @@ export class TablesController {
 
 
   // @Get(':id/join')
-  // join(@Param('id') tableId: string) {
-  //   return this.tablesService.join(tableId);
+  // join(@Param('id') tableId: string, playerId = 0) {
+  //   return this.tablesService.join(tableId, playerId);
 
   // }
 }
