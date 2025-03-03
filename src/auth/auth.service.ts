@@ -13,8 +13,7 @@ export class AuthService {
   ) { }
 
   async signIn(player: any): Promise<{ access_token: string }> {
-    const user = await this.playerService.findOne(player.username);
-    console.log(player)
+    const user = await this.playerService.findByUsername(player.username);
     if (user == undefined) {
       throw new BadRequestException("User not found");
     }

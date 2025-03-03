@@ -1,11 +1,9 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Req, Request } from '@nestjs/common';
 import { TablesService } from './tables.service';
-import { PlayersService } from 'src/players/players.service';
-
 
 @Controller('tables')
 export class TablesController {
-  constructor(private readonly tablesService: TablesService) {}
+  constructor(private readonly tablesService: TablesService) { }
 
   @Get()
   findAll() {
@@ -17,10 +15,9 @@ export class TablesController {
     return this.tablesService.findOne(+id);
   }
 
-
   @Get(':id/join')
-  join(@Param('id') tableId: string, playerId: string) {
+  join(@Param('id') tableId: number, @Request() req: any) {
+    const playerId = req.player.sub;
     return this.tablesService.join(tableId, playerId);
-
   }
 }

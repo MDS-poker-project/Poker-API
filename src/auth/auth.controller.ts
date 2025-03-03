@@ -35,11 +35,8 @@ export class AuthController {
     return this.playerService.create(player);
   }
 
-
   @Get('profile')
   getProfile(@Request() req: any) {
-
-    return req.user;
-
+    return this.playerService.findOne(req.user.username);
   }
 }

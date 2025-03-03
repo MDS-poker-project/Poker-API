@@ -38,8 +38,12 @@ export class PlayersService {
     return this.repo.find();
   }
 
-  findOne(username: string) {
-    return this.repo.findOne({ where: { "username": username } });
+  findByUsername(username: string) {
+    return this.repo.findOne({ where: { username: username } });
+  }
+
+  findOne(id: number) {
+    return this.repo.findOne({ where: { "id": id } });
   }
 
   getActions() {

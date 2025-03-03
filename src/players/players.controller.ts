@@ -13,8 +13,8 @@ export class PlayersController {
   }
 
   @Get('profil/:username')
-  findOne(@Param('username') username: string) {
-    return this.playersService.findOne(username);
+  findByUsername(@Param('username') username: string) {
+    return this.playersService.findByUsername(username);
   }
 
   @Get('actions')

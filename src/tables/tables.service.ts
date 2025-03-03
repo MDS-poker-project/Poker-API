@@ -1,36 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import { Table } from './entities/table.entity';
-import { PlayersService } from 'src/players/players.service';
 import { DeckService } from 'src/deck/deck.service';
+import { PlayersService } from 'src/players/players.service';
 
 @Injectable()
 export class TablesService {
-  tables : Table[] = []
-  constructor(private deckService : DeckService) {
+  tables: Table[] = []
+  constructor(private deckService: DeckService, private playersService: PlayersService) {
+    for (let i = 0; i < 5; i++) {
+      this.createTable();
     }
-
-  createTable() { 
-    let table = new Table('Table ' + this.tables.length)
-    this.tables.push(table)
-    return table;
   }
 
+  createTable() {
+    let table = new Table(this.tables.length);
+    table.deck = this.deckService.shuffle(this.deckService.generateDeck());
+    this.tables.push(table);
+  }
 
-
-  
-
-    // const player =  new PlayersService()
+  // const player =  new PlayersService()
   findAll() {
-    return `This action returns all tables`;
+    return this.tables;
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} table`;
+    return this.tables[id];
   }
 
-  join(tableId: string, playerId: string) {
-
-    return `This action joins the user ${playerId} to the table ${tableId}`;
+  async join(tableId: number, playerId: number) {
+    if (!this.tables[tableId]) {
+      throw new Error(`Table ${tableId} not found`);
+    }
+    let player = await this.playersService.findOne(playerId);
+    if (player && !this.tables[tableId].players.some(p => p.id === player.id)) {
+      this.tables[tableId].players.push(player);
+    }
+    return this.tables[tableId];
   }
 
   fold(tableId: string, playerId: string) {
