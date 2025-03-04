@@ -60,8 +60,8 @@ export class TablesService {
   }
 
   startGame(tableId: number) {
-    //Ajouter 2 IA
-    let players_number = 3; // Total number of players including IAs
+    //Ajouter autant d'IA que nécessaire pour commencer la partie
+    let players_number = 3;
     let currentPlayersCount = this.tables[tableId].players.length;
     let IA_needed = players_number - currentPlayersCount;
 
@@ -69,7 +69,16 @@ export class TablesService {
       let player = this.playersService.createPlayer(`IA${i}`);
       this.tables[tableId].players.push(player);
     }
-    //Initialiser le deck à la table
+
+    //Initialiser la river à la table
+    for (let i = 0; i < 3; i++) {
+      const card = this.deckService.pickCard(this.tables[tableId].deck);
+      if (card) {
+        this.tables[tableId].river.push(card);
+      } else {
+        throw new Error('No more cards in the deck');
+      }
+    }
     //Distribuer les 2 cartes à chaque joueur
     //Ajouter les blinds
     return `This action starts the game on the table ${tableId}`;
