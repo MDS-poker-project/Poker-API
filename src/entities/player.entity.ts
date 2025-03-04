@@ -22,4 +22,9 @@ export class Player {
     after_insert() { //Se déclenche automatiquement après l'insertion
         console.log(`Player ${this.id} created`)
     }
+
+    @Column({ default: 1000 })
+    money: number;
+
+    bet : number = 0;
 }
