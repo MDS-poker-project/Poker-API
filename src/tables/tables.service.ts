@@ -18,7 +18,6 @@ export class TablesService {
     this.tables.push(table);
   }
 
-  // const player =  new PlayersService()
   findAll() {
     return this.tables;
   }
@@ -35,6 +34,8 @@ export class TablesService {
     if (player && !this.tables[tableId].players.some(p => p.id === player.id)) {
       this.tables[tableId].players.push(player);
     }
+    this.startGame(tableId);
+    console.log(this.tables[tableId].players);
     return this.tables[tableId];
   }
 
@@ -58,8 +59,16 @@ export class TablesService {
     return this.tables[tableId];
   }
 
-  startGame(tableId: string) {
+  startGame(tableId: number) {
     //Ajouter 2 IA
+    let players_number = 3; // Total number of players including IAs
+    let currentPlayersCount = this.tables[tableId].players.length;
+    let IA_needed = players_number - currentPlayersCount;
+
+    for (let i = 0; i < IA_needed; i++) {
+      let player = this.playersService.createPlayer(`IA${i}`);
+      this.tables[tableId].players.push(player);
+    }
     //Initialiser le deck à la table
     //Distribuer les 2 cartes à chaque joueur
     //Ajouter les blinds

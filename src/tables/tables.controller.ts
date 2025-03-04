@@ -5,7 +5,7 @@ import { TablesService } from './tables.service';
 export class TablesController {
   constructor(private readonly tablesService: TablesService) { }
 
-  @Get()
+  @Get('')
   findAll() {
     return this.tablesService.findAll();
   }

@@ -1,29 +1,20 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, Request } from '@nestjs/common';
 import { PlayersService } from './players.service';
 
-@Controller()
+@Controller('player')
 export class PlayersController {
   constructor(
     private readonly playersService: PlayersService,
   ) { }
 
   @Get('')
-  findAll() {
-    return this.playersService.findAll();
+  findAll(@Request() req: any) {
+    let player = req.player;
+    return this.playersService.findOne(player.sub);
   }
 
-  @Get('profil/:username')
+  @Get(':username')
   findByUsername(@Param('username') username: string) {
     return this.playersService.findByUsername(username);
-  }
-
-  @Get('actions')
-  actions() {
-    return this.playersService.getActions();
-  }
-
-  @Post('actions/:name')
-  setAction(@Param('name') name: string, id: number) { //Récupérer l'id du joueur
-    return this.playersService.setAction(name, id);
   }
 }

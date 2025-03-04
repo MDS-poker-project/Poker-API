@@ -8,7 +8,6 @@ import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class PlayersService {
-  [x: string]: any;
   constructor(@InjectRepository(Player)
   private repo: Repository<Player>,
     private jwtService: JwtService
@@ -61,5 +60,10 @@ export class PlayersService {
     }
     user.state = name;
     this.repo.save(user);
+  }
+
+  createPlayer(name: string) {
+    const player = this.repo.create({ username: name });
+    return player;
   }
 }

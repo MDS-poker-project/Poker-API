@@ -30,10 +30,14 @@ export class DeckService {
         }
         return deck;
     }
+
     pickCard(deck: Deck) {
-        return 'This action picks a card from the deck';
+        let card = deck.cards.shift();
+        return card;
     }
+
     burnCard(deck: Deck) {
-        return 'This action burns a card from the deck';
+        deck.cards.shift();
+        return "Card burned";
     }
 }

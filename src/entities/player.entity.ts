@@ -1,4 +1,6 @@
 import { Exclude } from 'class-transformer';
+import { IsNumber } from 'class-validator';
+import { Card } from 'src/tables/entities/card.entity';
 import { Entity, Column, PrimaryGeneratedColumn, AfterInsert } from 'typeorm';
 
 @Entity()
@@ -13,10 +15,19 @@ export class Player {
 
     @Column()
     @Exclude()
-    password: string;
+    password: string = '';
 
-    @Column({ nullable: false })
-    state: string;
+    state: string = '';
+
+    @IsNumber()
+    @Column({ default: 1000 })
+    money: number = 1000;
+
+    bet: number = 0;
+
+    hand: Card[] = [];
+
+    tableId: number | undefined;
 
     @AfterInsert()
     after_insert() { //Se déclenche automatiquement après l'insertion
