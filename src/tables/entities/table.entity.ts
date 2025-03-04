@@ -23,4 +23,12 @@ export class Table {
     river: Card[] = [];
 
     pot: number = 0;
+
+    currentBet: number = 0;
+
+    currentTurn: number = 0;
+
+    round: number = 0;
+
+    dealerPosition: number = 0;
 }
