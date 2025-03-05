@@ -3,6 +3,7 @@ import { Table } from './entities/table.entity';
 import { DeckService } from 'src/deck/deck.service';
 import { PlayersService } from 'src/players/players.service';
 import { retry } from 'rxjs';
+import { PlayerDto } from 'src/players/dto/players.dto';
 import { Repository } from "typeorm";
 import { InjectRepository } from '@nestjs/typeorm';
 import { Player } from 'src/entities/player.entity';
@@ -49,7 +50,7 @@ export class TablesService {
       return 'Player not found';
     }
     this.tables[tableId].players.push(player);
-    this.startGame(tableId);
+    this.startGame(tableId, playerId);
     return this.tables[tableId];
   }
 
@@ -71,7 +72,7 @@ export class TablesService {
         case 'leave':
           return this.leave(tableId, playerId);
         case 'startGame':
-          return this.startGame(tableId)
+          return this.startGame(tableId, playerId)
         case 'smallBlind':
           return this.blinds(tableId, playerId, 5);
         case 'bigBlind':
@@ -127,7 +128,7 @@ export class TablesService {
     return this.tables;
   }
 
-  startGame(tableId: number) {
+  startGame(tableId: number, currentPlayerId: number) {
     // Ajouter autant d'IA que nécessaire pour commencer la partie
     let players_number = 3;
     let currentPlayersCount = this.tables[tableId].players.length;
@@ -135,6 +136,10 @@ export class TablesService {
 
     for (let i = 0; i < IA_needed; i++) {
       let player = this.playersService.createPlayer(`AI${i}`);
+      const playerDTO = new PlayerDto({
+        username: player.username,
+        hand: player.id === currentPlayerId ? player.hand : undefined,
+      });
       this.tables[tableId].players.push(player);
     }
 
@@ -155,6 +160,16 @@ export class TablesService {
       }
     }
     // Distribuer les 2 cartes à chaque joueur
+    this.tables[tableId].players.forEach(player => {
+      for (let i = 0; i < 2; i++) {
+        const card = this.deckService.pickCard(this.tables[tableId].deck);
+        if (card) {
+          player.hand.push(card);
+        } else {
+          return "No more cards in the deck";
+        }
+      }
+    });
     // Ajouter les blinds
     return `This action starts the game on the table ${tableId}`;
   }

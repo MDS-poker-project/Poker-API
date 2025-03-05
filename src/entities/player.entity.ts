@@ -1,7 +1,8 @@
-import { Exclude } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
 import { IsNumber } from 'class-validator';
 import { Card } from 'src/tables/entities/card.entity';
 import { Entity, Column, PrimaryGeneratedColumn, AfterInsert } from 'typeorm';
+
 
 @Entity()
 export class Player {
