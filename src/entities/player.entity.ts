@@ -8,7 +8,7 @@ import { Entity, Column, PrimaryGeneratedColumn, AfterInsert } from 'typeorm';
 export class Player {
 
     @PrimaryGeneratedColumn()
-    @Exclude()
+    // @Exclude()
     id: number
 
     @Column()
@@ -31,8 +31,6 @@ export class Player {
     tableId: number | undefined;
 
     isAI: boolean = false;
-
-    isDealer: boolean = false;
 
     @AfterInsert()
     after_insert() { //Se déclenche automatiquement après l'insertion

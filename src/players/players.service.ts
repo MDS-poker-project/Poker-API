@@ -78,4 +78,12 @@ export class PlayersService {
     }
     return;
   }
+
+  resetPlayer(player: Player) {
+    player.hand = [];
+    player.state = "";
+    player.tableId = undefined;
+    player.bet = 0;
+    return player;
+  }
 }

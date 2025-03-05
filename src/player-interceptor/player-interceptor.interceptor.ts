@@ -13,7 +13,7 @@ export class FilterPlayerHandInterceptor implements NestInterceptor {
                 if (data && data.players) {
                     data.players = data.players.map((player: any) => {
                         // Toujours retirer le password
-                        let { password, hand, ...rest } = player;
+                        let { id, password, hand, ...rest } = player;
                         // Si le joueur connecté, on restaure sa main, sinon on la garde supprimée
                         if (player.id === currentPlayerId) {
                             return { ...rest, hand, };

@@ -30,5 +30,7 @@ export class Table {
 
     round: number = 0;
 
-    dealerPosition: number = 0;
+    currentRound: number = 0;
+
+    currentPlayer: Player | undefined;
 }
