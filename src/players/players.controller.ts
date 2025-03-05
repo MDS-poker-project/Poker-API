@@ -13,8 +13,15 @@ export class PlayersController {
     return this.playersService.findOne(player.sub);
   }
 
+  @Get('motherlode')
+  motherlode(@Request() req: any) {
+    let player = req.player;
+    return this.playersService.motherlode(player.sub);
+  }
+
   @Get(':username')
   findByUsername(@Param('username') username: string) {
     return this.playersService.findByUsername(username);
   }
+
 }

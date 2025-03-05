@@ -38,17 +38,18 @@ export class TablesService {
   async join(tableId: number, playerId: number) {
     //Vérifier que le joueur a assez d'argent pour rejoindre la table
     if (!this.tables[tableId]) {
-      throw new Error(`Table ${tableId} not found`);
+      return `Table ${tableId} not found`;
+    }
+    //Vérifier que le joueur n'est pas déjà dans la table
+    if (this.tables[tableId].players.some((p) => p.id === playerId)) {
+      return `You are already in the table ${tableId}`;
     }
     let player = await this.playersService.findOne(playerId);
-    if (
-      player &&
-      !this.tables[tableId].players.some((p) => p.id === playerId)
-    ) {
-      this.tables[tableId].players.push(player);
+    if (!player) {
+      return 'Player not found';
     }
+    this.tables[tableId].players.push(player);
     this.startGame(tableId);
-    console.log(this.tables[tableId].players);
     return this.tables[tableId];
   }
 
@@ -113,41 +114,53 @@ export class TablesService {
 
 
   leave(tableId: number, playerId: number) {
+    //TODO: Vérifier que la partie n'est pas en cours
     if (!this.tables[tableId]) {
-      throw new Error(`Table ${tableId} not found`);
+      return `Table ${tableId} not found`;
     }
     this.tables[tableId].players = this.tables[tableId].players.filter(
       (p) => p.id !== playerId,
     );
-    return this.tables[tableId];
+    if (this.tables[tableId].players.every((p) => p.isAI)) {
+      this.tables[tableId].players = [];
+    }
+    return this.tables;
   }
 
   startGame(tableId: number) {
-    //Ajouter autant d'IA que nécessaire pour commencer la partie
+    // Ajouter autant d'IA que nécessaire pour commencer la partie
     let players_number = 3;
     let currentPlayersCount = this.tables[tableId].players.length;
     let IA_needed = players_number - currentPlayersCount;
 
     for (let i = 0; i < IA_needed; i++) {
-      let player = this.playersService.createPlayer(`IA${i}`);
+      let player = this.playersService.createPlayer(`AI${i}`);
       this.tables[tableId].players.push(player);
     }
 
-    //Initialiser la river à la table
+    // Sélectionner un dealer qui n'est pas un joueur non IA
+    let AIPlayers = this.tables[tableId].players.filter(player => player.isAI === true);
+    if (AIPlayers.length > 1) {
+      let dealerPosition = Math.floor(Math.random() * AIPlayers.length);
+      AIPlayers[dealerPosition].isDealer = true;
+    }
+
+    // Initialiser la river à la table
     for (let i = 0; i < 3; i++) {
       const card = this.deckService.pickCard(this.tables[tableId].deck);
       if (card) {
         this.tables[tableId].river.push(card);
       } else {
-        throw new Error('No more cards in the deck');
+        return "No more cards in the deck";
       }
     }
-    //Distribuer les 2 cartes à chaque joueur
-    //Ajouter les blinds
+    // Distribuer les 2 cartes à chaque joueur
+    // Ajouter les blinds
     return `This action starts the game on the table ${tableId}`;
   }
-}
-function UpdatePlayerMoney(playerId: number, amount: number) {
-  throw new Error('Function not implemented.');
-}
 
+  UpdatePlayerMoney(playerId: number, amount: number) {
+    throw new Error('Function not implemented.');
+  }
+
+}

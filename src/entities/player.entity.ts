@@ -29,6 +29,8 @@ export class Player {
 
     tableId: number | undefined;
 
+    isAI: boolean = false;
+
     isDealer: boolean = false;
 
     @AfterInsert()

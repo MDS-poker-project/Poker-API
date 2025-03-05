@@ -62,8 +62,20 @@ export class PlayersService {
     this.repo.save(user);
   }
 
-  createPlayer(name: string) {
-    const player = this.repo.create({ username: name });
+  createPlayer(name: string): Player {
+    // Créer directement une instance de Player sans passer par le repository
+    const player = new Player();
+    player.username = name;
+    player.isAI = true;
     return player;
+  }
+
+  async motherlode(playerId: number) {
+    let player = await this.repo.findOne({ where: { id: playerId } });
+    if (player) {
+      player.money += 100;
+      return this.repo.save(player);
+    }
+    return;
   }
 }
