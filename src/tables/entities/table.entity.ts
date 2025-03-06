@@ -32,5 +32,5 @@ export class Table {
 
     currentRound: number = 0;
 
-    currentPlayer: Player | undefined;
+    currentPlayerIndex: number;
 }

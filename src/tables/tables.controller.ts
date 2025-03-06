@@ -43,13 +43,22 @@ export class TablesController {
     return this.tablesService.leave(tableId, playerId);
   }
 
+  @Get(':id/actions')
+  @ApiResponse({ status: 201, description: 'The record has been successfully created.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  actions(@Param('id') tableId: number, @Request() req: any) {
+    const playerId = req.player.sub;
+    // return this.tablesService.actions(tableId, playerId);
+  }
+
   @Get(':id/actions/:action')
   @ApiResponse({ status: 201, description: 'The record has been successfully created.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   act(@Param('id') tableId: number, @Param('action') action: string, @Request() req: any) {
     console.log("AAA")
     const playerId = req.player.sub;
-    return this.tablesService.actions(tableId, playerId, action);
+    return this.tablesService.processHumanMove(tableId, playerId, action);
+    // return this.tablesService.actions(tableId, playerId, action);
   }
 
 }

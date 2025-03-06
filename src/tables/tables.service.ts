@@ -56,17 +56,17 @@ export class TablesService {
     return this.tables[tableId];
   }
 
-  actions(tableId: number, playerId: number, action: string, amount?: number) {
+  async actions(tableId: number, playerId: number, action: string, amount?: number) {
     if (!this.tables[tableId] == null) {
       switch (action) {
         case 'fold':
-          return this.fold(tableId, playerId);
+          return await this.fold(tableId, playerId);
         case 'call':
-          return this.call(tableId, playerId, amount);
+          return await this.call(tableId, playerId, amount);
         case 'raise':
-          return this.raise(tableId, playerId, amount);
+          return await this.raise(tableId, playerId, amount);
         case 'check':
-          return this.check(tableId, playerId);
+          return await this.check(tableId, playerId);
         case 'leave':
           return this.leave(tableId, playerId);
         case 'startGame':
@@ -96,10 +96,21 @@ export class TablesService {
 
     // Mettre à jour le porte-monnaie du joueur
     const newMoney = player.money - amount;
-    await this.playerRepository.update(playerId, { money: newMoney });
+    console.log("playerId", playerId, "newMoney", newMoney);
 
     // Ajouter la mise au joueur
     player.bet = amount;
+    player.money = newMoney;
+
+    // Mettre à jour la mise actuelle à la table
+    this.tables[tableId].currentBet = amount;
+    //Mettre à jour le player dans la table
+    this.tables[tableId].players = this.tables[tableId].players.map((p) => {
+      if (p.id === playerId) {
+        return player;
+      }
+      return p;
+    });
 
     return `This action adds the blinds to the table ${tableId}`;
   }
@@ -197,13 +208,12 @@ export class TablesService {
     if (this.tables[tableId].players.every((p) => p.isAI)) {
       this.tables[tableId].players = [];
     }
-    if (this.tables[tableId].players.length === 0) {
-      this.resetTable(tableId);
-      this.tables[tableId].players.forEach((player: Player) => {
-        this.playersService.resetPlayer(player);
-      }
-      )
+    this.resetTable(tableId);
+    this.tables[tableId].players.forEach((player: Player) => {
+      this.playersService.resetPlayer(player);
     }
+    )
+
     return this.tables;
   }
 
@@ -213,21 +223,11 @@ export class TablesService {
     // Ajouter autant d'IA que nécessaire pour commencer la partie
     this.generateAI(tableId, currentPlayerId, 3);
 
-    // Désigner un joueur (AI) comme dealer
-    let AIPlayers = table.players.filter(player => player.isAI === true);
-    if (AIPlayers.length > 1) {
-      let dealerPosition = Math.floor(Math.random() * AIPlayers.length);
-      AIPlayers[dealerPosition].state = "dealer";
-    }
-
-    // Initialiser la river à la table
-    for (let i = 0; i < 3; i++) {
-      const card = this.deckService.pickCard(table.deck);
-      if (card) {
-        table.river.push(card);
-      } else {
-        return "No more cards in the deck";
-      }
+    // Désigner un joueur comme dealer
+    let players = table.players;
+    if (players.length > 1) {
+      let dealerPosition = Math.floor(Math.random() * players.length);
+      players[dealerPosition].state = "dealer";
     }
 
     // Distribuer les 2 cartes à chaque joueur
@@ -241,26 +241,27 @@ export class TablesService {
         }
       }
     });
+
+    // Brûler une carte
+    this.deckService.burnCard(table.deck);
+
+    // Initialiser la river à la table
+    for (let i = 0; i < 3; i++) {
+      const card = this.deckService.pickCard(table.deck);
+      if (card) {
+        table.river.push(card);
+      } else {
+        return "No more cards in the deck";
+      }
+    }
+
     // Attribuer les blinds aux joueurs suivant le dealer par l'attribut player.state
     this.assignBlinds(tableId);
 
-    // DEBUT DU TOUR DE JEU
-    let roundActive = true;
-    let players = table.players;
-    table.currentPlayer = players.find(player => player.state === "small_blind");
+    // ----- DEBUT DU TOUR DE JEU ------
+    table.currentPlayerIndex = players.findIndex(player => player.state === "small_blind");
 
-    while (roundActive && table.currentRound <= 4) {
-      console.log(`Round ${table.currentRound}`);
-      console.log(`Current player: ${table.currentPlayer?.username}`);
-
-      if (table.currentPlayer) {
-        table.currentPlayer.isAI ?
-          this.processAIMove(tableId, table.currentPlayer) :
-          this.processHumanMove(tableId, table.currentPlayer);
-      }
-      table.currentRound++;
-
-    }
+    this.playRound(tableId);
 
   }
 
@@ -280,7 +281,7 @@ export class TablesService {
     // Réinitialiser les états des joueurs
     players.forEach(player => player.state = "waiting");
 
-    // Attribuer les blinds
+    // Attribuer les rôles
     players[dealerIndex].state = "dealer";
     players[smallBlindIndex].state = "small_blind";
     players[bigBlindIndex].state = "big_blind";
@@ -316,28 +317,56 @@ export class TablesService {
 
   processAIMove(tableId: number, player: Player) {
     // Logique de l'IA
-    console.log(`AI ${player.username} is playing`);
 
     let table = this.tables[tableId];
 
     // Si c'est le premier tour et que le joueur est small_blind ou big_blind, il doit jouer la blinde
     if (table.currentRound === 1 && (player.state === "small_blind" || player.state === "big_blind")) {
       let blindAmount = player.state === "small_blind" ? 5 : 10;
-      console.log(`AI ${player.username} is paying the ${player.state} of ${blindAmount}`);
-      console.log(player)
+      console.log(`Player ${player.username} is playing ${player.state} with amount ${blindAmount}`);
       this.blinds(tableId, player.id, blindAmount);
     } else {
       // Sinon, on simule une action aléatoire
       let actions = ['fold', 'call', 'raise', 'check'];
       let randomAction = actions[Math.floor(Math.random() * actions.length)];
-      console.log(`AI ${player.username} is ${randomAction}ing`);
+      console.log(`Player ${player.username} is playing ${randomAction} with amount`);
       this.actions(tableId, player.id, randomAction);
     }
   }
 
-  processHumanMove(tableId: number, player: Player) {
+  processHumanMove(tableId: number, playerId: number, action: string, amount?: number) {
     // Logique du joueur humain
-    console.log(`Player ${player.username} is playing`);
+    let table = this.tables[tableId];
+    let player = table.players.find(player => player.id === playerId);
+    console.log(`Player ${player?.username} is playing ${action} with amount ${amount}`);
+    console.log(table.currentRound);
+
+    // Vérifier que c'est bien au tour de ce joueur
+    if (table.players[table.currentPlayerIndex]?.id !== playerId) {
+      return "Ce n'est pas votre tour";
+    }
+
+
+    if (player && table.currentRound === 1 && ((player.state === "small_blind" && action !== "small_blind") || (player.state === "big_blind" && action !== "big_blind"))) {
+      return "Vous devez jouer la blinde";
+    }
+
+    this.actions(tableId, playerId, action, amount);
+
+    //APRES NIMPORTE QUELLE ACTION, FAIRE JOUER LES IA ET VERIFIER SI LA MANCHE EST TERMINEE
+    table.currentPlayerIndex = (table.currentPlayerIndex + 1) % table.players.length;
+    this.playRound(tableId);
+
+  }
+
+  playRound(tableId: number) {
+    let table = this.tables[tableId];
+    while (table.players[table.currentPlayerIndex]?.isAI) {
+      // TODO : L'instance de player envoyée à processAIMove n'est pas la même que table.currentPlayer
+      this.processAIMove(tableId, table.players[table.currentPlayerIndex]);
+      //Changer le currentPlayer
+      table.currentPlayerIndex = (table.currentPlayerIndex + 1) % table.players.length;
+    }
   }
 
 }
