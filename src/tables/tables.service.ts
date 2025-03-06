@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { Table } from './entities/table.entity';
 import { DeckService } from 'src/deck/deck.service';
 import { PlayersService } from 'src/players/players.service';
-import { retry } from 'rxjs';
-import { Repository } from "typeorm";
+import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Player } from 'src/entities/player.entity';
+import { Post } from '@nestjs/common';
+import { ApiResponse } from '@nestjs/swagger';
+
 @Injectable()
 export class TablesService {
   tables: Table[] = [];
@@ -52,11 +54,7 @@ export class TablesService {
     return this.tables[tableId];
   }
 
-
-
   actions(tableId: number, playerId: number, action: string, amount?: number) {
-
-
     if (!this.tables[tableId] == null) {
       switch (action) {
         case 'fold':
@@ -70,56 +68,136 @@ export class TablesService {
         case 'leave':
           return this.leave(tableId, playerId);
         case 'startGame':
-          return this.startGame(tableId)
+          return this.startGame(tableId);
         case 'smallBlind':
           return this.blinds(tableId, playerId, 5);
         case 'bigBlind':
           return this.blinds(tableId, playerId, 10);
         default:
           return 'Action not found';
-
       }
     }
   }
 
+  
   async blinds(tableId: number, playerId: number, amount: number) {
-    //Vérifier si le joueur a assez d'argent pour payer les blinds
-    // this.playersService.canPay(amount)
-    // this.playersService.pay(amount)
-    let player = await this.playersService.findOne(playerId);
-    if (player && player.money < amount) {
+    // Récupérer le joueur depuis la base de données
+    const player = await this.playersService.findOne(playerId);
+    if (!player) {
+      throw new Error(`Player ${playerId} not found`);
+    }
+
+    // Vérifier si le joueur a assez d'argent
+    if (player.money < amount) {
       return 'Not enough money';
     }
 
-    //Mettre à jour le porte monnaie du joueur dans la bdd
-    if (player) {
-      let newMoney = player.money - amount;
-      await this.playerRepository.update(playerId, { money: newMoney });
-    }
-    //Ajouter les mises à chaque joueur de la table
-    if (player)
-      player.bet = amount;
+    // Mettre à jour le porte-monnaie du joueur
+    const newMoney = player.money - amount;
+    await this.playerRepository.update(playerId, { money: newMoney });
 
+    // Ajouter la mise au joueur
+    player.bet = amount;
 
     return `This action adds the blinds to the table ${tableId}`;
   }
-
+  // Actiopn de passer
   fold(tableId: number, playerId: number) {
+    if (!this.tables[tableId]) {
+      throw new Error(`Table ${tableId} not found`);
+    }
+
+    const player = this.tables[tableId].players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new Error(`Player ${playerId} not found at table ${tableId}`);
+    }
+
+    player.state = 'fold';
+    return `This action folds the player ${playerId} on the table ${tableId}`;
   }
-  call(tableId: number, playerId: number, amount: number = 0) { }
-  raise(tableId: number, playerId: number, amount: number = 0) { }
-  check(tableId: number, playerId: number) { }
 
+  // Action de suivre la mise
+  async call(tableId: number, playerId: number, amount: number = 0) {
+    if (!this.tables[tableId]) {
+      throw new Error(`Table ${tableId} not found`);
+    }
 
+    const player = this.tables[tableId].players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new Error(`Player ${playerId} not found at table ${tableId}`);
+    }
 
+    if (player.money < amount) {
+      return 'Not enough money';
+    }
+
+    // Mettre à jour le porte-monnaie
+    player.money -= amount;
+    await this.playerRepository.update(playerId, { money: player.money });
+
+    // Ajouter la mise
+    player.bet = amount;
+
+    return `This action calls the bet on the table ${tableId}`;
+  }
+
+  //  Action de relancer la mise
+  async raise(tableId: number, playerId: number, amount: number = 0) {
+    if (!this.tables[tableId]) {
+      throw new Error(`Table ${tableId} not found`);
+    }
+
+    const player = this.tables[tableId].players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new Error(`Player ${playerId} not found at table ${tableId}`);
+    }
+
+    if (player.money < amount) {
+      return 'Not enough money';
+    }
+
+    // Mettre à jour le porte-monnaie
+    player.money -= amount;
+    await this.playerRepository.update(playerId, { money: player.money });
+
+    // Ajouter la mise
+    player.bet = amount;
+
+    return `This action raises the bet on the table ${tableId}`;
+  }
+
+  //  Action de checker la mise
+  check(tableId: number, playerId: number) {
+    if (!this.tables[tableId]) {
+      throw new Error(`Table ${tableId} not found`);
+    }
+
+    const player = this.tables[tableId].players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new Error(`Player ${playerId} not found at table ${tableId}`);
+    }
+
+    // Dans un vrai poker, "check" ne change pas la mise actuelle, donc on ne touche pas à player.bet
+    return `This action checks the bet on the table ${tableId}`;
+  }
+
+  // Action de quitter la table
   leave(tableId: number, playerId: number) {
     if (!this.tables[tableId]) {
       throw new Error(`Table ${tableId} not found`);
     }
+
+    const initialLength = this.tables[tableId].players.length;
     this.tables[tableId].players = this.tables[tableId].players.filter(
       (p) => p.id !== playerId,
     );
+
+    if (initialLength === this.tables[tableId].players.length) {
+      throw new Error(`Player ${playerId} not found at table ${tableId}`);
+    }
+
     return this.tables[tableId];
+
   }
 
   startGame(tableId: number) {
@@ -150,4 +228,3 @@ export class TablesService {
 function UpdatePlayerMoney(playerId: number, amount: number) {
   throw new Error('Function not implemented.');
 }
-

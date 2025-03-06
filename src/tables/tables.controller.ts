@@ -1,21 +1,31 @@
 import { Body, Controller, Get, Param, Post, Req, Request } from '@nestjs/common';
 import { TablesService } from './tables.service';
+import { ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @Controller('tables')
+@ApiResponse({ status: 201, description: 'The record has been successfully created.'})
+@ApiResponse({ status: 403, description: 'Forbidden.'})
 export class TablesController {
   constructor(private readonly tablesService: TablesService) { }
 
   @Get('')
+  @ApiResponse({ status: 201, description: 'The record has been successfully created.'})
+  @ApiResponse({ status: 403, description: 'Forbidden.'})
   findAll() {
     return this.tablesService.findAll();
   }
 
   @Get(':id')
+  @ApiResponse({ status: 201, description: 'The record has been successfully created.'})
+  @ApiResponse({ status: 403, description: 'Forbidden.'})
   findOne(@Param('id') id: string) {
     return this.tablesService.findOne(+id);
   }
 
   @Get(':id/join')
+  @ApiResponse({ status: 201, description: 'The record has been successfully created.'})
+  @ApiResponse({ status: 403, description: 'Forbidden.'})
   join(@Param('id') tableId: number, @Request() req: any) {
     const playerId = req.player.sub;
     return this.tablesService.join(tableId, playerId);
@@ -23,15 +33,18 @@ export class TablesController {
   
 
   @Get(':id/leave')
+  @ApiResponse({ status: 201, description: 'The record has been successfully created.'})
+  @ApiResponse({ status: 403, description: 'Forbidden.'})
   leave(@Param('id') tableId: number, @Request() req: any) {
     const playerId = req.player.sub;
     return this.tablesService.leave(tableId, playerId);
   }
 
   @Get(':id/actions/:action')
-  act(@Param('id') tableId: number, @Param('action') action: string, @Request() req: any, @Body() body : any) {
+  @ApiResponse({ status: 201, description: 'The record has been successfully created.'})
+  @ApiResponse({ status: 403, description: 'Forbidden.'})
+  act(@Param('id') tableId: number, @Param('action') action: string, @Request() req: any) {
     console.log("AAA")
-    console.log(body)
     const playerId = req.player.sub;
     return this.tablesService.actions(tableId, playerId, action);
   }

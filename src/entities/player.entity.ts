@@ -34,8 +34,4 @@ export class Player {
         console.log(`Player ${this.id} created`)
     }
 
-    @Column({ default: 1000 })
-    money: number;
-
-    bet : number = 0;
 }
