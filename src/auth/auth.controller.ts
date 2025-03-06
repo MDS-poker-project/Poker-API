@@ -36,9 +36,10 @@ export class AuthController {
     return this.playerService.create(player);
   }
 
-  @ApiBearerAuth()
+  
   @Get('profile')
+  @ApiBearerAuth()
   getProfile(@Request() req: any) {
-    return this.playerService.findOne(req.user.username);
+    return this.playerService.findOne(req.player.userId);
   }
 }

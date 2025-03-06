@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Table } from './entities/table.entity';
 import { DeckService } from 'src/deck/deck.service';
 import { PlayersService } from 'src/players/players.service';
@@ -82,36 +82,44 @@ export class TablesService {
   }
 
 
-  async blinds(tableId: number, playerId: number, amount: number) {
-    // Récupérer le joueur depuis la base de données
+  async blinds(tableId: number, playerId: number, amount: number): Promise<string> {
     const player = await this.playersService.findOne(playerId);
     if (!player) {
-      throw new Error(`Player ${playerId} not found`);
+      throw new NotFoundException(`Player ${playerId} not found`);
     }
 
-    // Vérifier si le joueur a assez d'argent
     if (player.money < amount) {
       return 'Not enough money';
     }
 
-    // Mettre à jour le porte-monnaie du joueur
     const newMoney = player.money - amount;
     await this.playerRepository.update(playerId, { money: newMoney });
-
-    // Ajouter la mise au joueur
+    player.money = newMoney; // Mise à jour locale
     player.bet = amount;
+
+    // Ajouter le joueur à la table si nécessaire (exemple)
+    if (!this.tables[tableId]) {
+      //this.tables[tableId] = { players: [] };
+    }
+    const tablePlayer = this.tables[tableId].players.find((p) => p.id === playerId);
+    if (!tablePlayer) {
+      this.tables[tableId].players.push(player);
+    } else {
+      tablePlayer.bet = amount;
+    }
 
     return `This action adds the blinds to the table ${tableId}`;
   }
   // Actiopn de passer
-  fold(tableId: number, playerId: number) {
+
+  fold(tableId: number, playerId: number): string {
     if (!this.tables[tableId]) {
-      throw new Error(`Table ${tableId} not found`);
+      throw new NotFoundException(`Table ${tableId} not found`);
     }
 
     const player = this.tables[tableId].players.find((p) => p.id === playerId);
     if (!player) {
-      throw new Error(`Player ${playerId} not found at table ${tableId}`);
+      throw new NotFoundException(`Player ${playerId} not found at table ${tableId}`);
     }
 
     player.state = 'fold';
@@ -144,67 +152,57 @@ export class TablesService {
   }
 
   //  Action de relancer la mise
-  async raise(tableId: number, playerId: number, amount: number = 0) {
+  async raise(tableId: number, playerId: number, amount: number = 0): Promise<string> {
     if (!this.tables[tableId]) {
-      throw new Error(`Table ${tableId} not found`);
+      throw new NotFoundException(`Table ${tableId} not found`);
     }
 
     const player = this.tables[tableId].players.find((p) => p.id === playerId);
     if (!player) {
-      throw new Error(`Player ${playerId} not found at table ${tableId}`);
+      throw new NotFoundException(`Player ${playerId} not found at table ${tableId}`);
     }
 
     if (player.money < amount) {
       return 'Not enough money';
     }
 
-    // Mettre à jour le porte-monnaie
     player.money -= amount;
     await this.playerRepository.update(playerId, { money: player.money });
-
-    // Ajouter la mise
     player.bet = amount;
 
     return `This action raises the bet on the table ${tableId}`;
   }
 
   //  Action de checker la mise
-  check(tableId: number, playerId: number) {
+  check(tableId: number, playerId: number): string {
     if (!this.tables[tableId]) {
-      throw new Error(`Table ${tableId} not found`);
+      throw new NotFoundException(`Table ${tableId} not found`);
     }
 
     const player = this.tables[tableId].players.find((p) => p.id === playerId);
     if (!player) {
-      throw new Error(`Player ${playerId} not found at table ${tableId}`);
+      throw new NotFoundException(`Player ${playerId} not found at table ${tableId}`);
     }
 
-    // Dans un vrai poker, "check" ne change pas la mise actuelle, donc on ne touche pas à player.bet
     return `This action checks the bet on the table ${tableId}`;
   }
 
   // Action de quitter la table
-  leave(tableId: number, playerId: number) {
-    //TODO: Vérifier que la partie n'est pas en cours
+  leave(tableId: number, playerId: number): { players: Player[] } {
     if (!this.tables[tableId]) {
-      return `Table ${tableId} not found`;
+      throw new NotFoundException(`Table ${tableId} not found`);
     }
 
     const initialLength = this.tables[tableId].players.length;
     this.tables[tableId].players = this.tables[tableId].players.filter(
       (p) => p.id !== playerId,
     );
-    if (this.tables[tableId].players.every((p) => p.isAI)) {
-      this.tables[tableId].players = [];
+
+    if (initialLength === this.tables[tableId].players.length) {
+      throw new NotFoundException(`Player ${playerId} not found at table ${tableId}`);
     }
-    if (this.tables[tableId].players.length === 0) {
-      this.resetTable(tableId);
-      this.tables[tableId].players.forEach((player: Player) => {
-        this.playersService.resetPlayer(player);
-      }
-      )
-    }
-    return this.tables;
+
+    return this.tables[tableId];
   }
 
   startGame(tableId: number, currentPlayerId: number) {

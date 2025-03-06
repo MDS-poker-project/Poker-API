@@ -18,7 +18,7 @@ export class AuthService {
       throw new BadRequestException("User not found");
     }
     if (await bcrypt.compare(player.password, user.password)) {
-      const payload = { name: player.name, sub: user.id };
+      const payload = { name: player.username, userId: user.id };
       return {
         access_token: this.jwtService.sign(payload),
       };

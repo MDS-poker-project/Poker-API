@@ -24,10 +24,6 @@ import { DeckService } from './deck/deck.service';
   ],
   controllers: [AppController],
   providers: [AppService, TablesService,
-    {
-      provide: APP_GUARD,
-      useClass: AuthGuard,
-    },
     DeckService],
 })
 export class AppModule { }

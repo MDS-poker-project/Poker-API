@@ -21,12 +21,16 @@ export class PlayerDto {
 
     @IsNumber()
     @IsNotEmpty()
-
+    @ApiProperty()
     money: number;
 
     @IsString()
+    @IsNotEmpty()
+    @ApiProperty()
     state: string;
 
+    @IsString()
+    @ApiProperty()
     hand?: Card[];
 
     constructor(partial: Partial<PlayerDto>) {
