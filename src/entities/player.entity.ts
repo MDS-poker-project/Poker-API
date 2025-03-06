@@ -1,13 +1,14 @@
-import { Exclude } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
 import { IsNumber } from 'class-validator';
 import { Card } from 'src/tables/entities/card.entity';
 import { Entity, Column, PrimaryGeneratedColumn, AfterInsert } from 'typeorm';
+
 
 @Entity()
 export class Player {
 
     @PrimaryGeneratedColumn()
-    @Exclude()
+    // @Exclude()
     id: number
 
     @Column()
@@ -28,6 +29,8 @@ export class Player {
     hand: Card[] = [];
 
     tableId: number | undefined;
+
+    isAI: boolean = false;
 
     @AfterInsert()
     after_insert() { //Se déclenche automatiquement après l'insertion
