@@ -51,14 +51,24 @@ export class TablesController {
     // return this.tablesService.actions(tableId, playerId);
   }
 
-  @Get(':id/actions/:action')
   @Get(':id/actions/:action/:amount')
   @ApiResponse({ status: 201, description: 'The record has been successfully created.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
-  act(@Request() req: any, @Param('id') tableId: number, @Param('action') action: string, @Param('amount') amount?: string) {
+  actionWithAmount(@Request() req: any, @Param('id') tableId: number, @Param('action') action: string, @Param('amount') amount?: string) {
     const playerId = req.player.sub;
+    console.log('amount', amount);
+    console.log("amount type", typeof amount);
     const parsedAmount = amount ? Number(amount) : undefined;
     return this.tablesService.processHumanMove(tableId, playerId, action, parsedAmount);
+    // return this.tablesService.actions(tableId, playerId, action);
+  }
+
+  @Get(':id/actions/:action')
+  @ApiResponse({ status: 201, description: 'The record has been successfully created.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  act(@Request() req: any, @Param('id') tableId: number, @Param('action') action: string) {
+    const playerId = req.player.sub;
+    return this.tablesService.processHumanMove(tableId, playerId, action);
     // return this.tablesService.actions(tableId, playerId, action);
   }
 

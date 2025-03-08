@@ -9,7 +9,7 @@ export class LoggerInterceptorInterceptor implements NestInterceptor {
     console.log('Méthode appelée : ', methodKey);
     // Le controlleur s'apprêtant à être appelé
     const className = context.getClass().name;
-    console.log("Fichier appelé : ", className);
+    // console.log("Fichier appelé : ", className);
     return next.handle();
   }
 }

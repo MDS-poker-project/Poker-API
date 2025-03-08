@@ -54,16 +54,17 @@ export class PlayersService {
     ];
   }
 
-  async setAction(name: string, id: number) { //Récupérer l'id du joueur quand jwt
+  async setAction(name: string, id: number) {
     const user = await this.repo.findOne({ where: { id: id } });
     if (user == undefined) {
       throw new BadRequestException("User not found");
     }
     user.state = name;
-    this.repo.save(user);
+    // Supprimer la sauvegarde pour ne pas persister le state dynamique
+    // this.repo.save(user);
   }
 
-  async createPlayer(name: string, table: Table): Promise<Player> {
+  async createAIPlayer(name: string, table: Table): Promise<Player> {
     // Créer directement une instance de Player sans passer par le repository
     const player = new Player();
     player.username = name;
@@ -84,6 +85,18 @@ export class PlayersService {
       }
     }
 
+    return player;
+  }
+
+  async createPlayer(playerId: number): Promise<Player> {
+    const player = new Player();
+    const playerData = await this.repo.findOne({ where: { id: playerId } });
+    player.id = playerId;
+    if (!playerData) {
+      throw new BadRequestException("Player not found");
+    }
+    player.username = playerData.username;
+    player.money = playerData.money;
     return player;
   }
 
