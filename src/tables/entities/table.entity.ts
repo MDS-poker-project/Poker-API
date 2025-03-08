@@ -33,4 +33,6 @@ export class Table {
     currentRound: number = 0;
 
     currentPlayerIndex: number;
+
+    dealerIndex: number;
 }

@@ -6,8 +6,6 @@ import { PlayerDto } from 'src/players/dto/players.dto';
 import { Repository } from "typeorm";
 import { InjectRepository } from '@nestjs/typeorm';
 import { Player } from 'src/entities/player.entity';
-import { Post } from '@nestjs/common';
-import { ApiResponse } from '@nestjs/swagger';
 
 @Injectable()
 export class TablesService {
@@ -39,20 +37,26 @@ export class TablesService {
   }
 
   async join(tableId: number, playerId: number) {
-    //Vérifier que le joueur a assez d'argent pour rejoindre la table
     if (!this.tables[tableId]) {
       return `Table ${tableId} not found`;
     }
-    //Vérifier que le joueur n'est pas déjà dans la table
-    if (this.tables[tableId].players.some((p) => p.id === playerId)) {
-      return `You are already in the table ${tableId}`;
-    }
+
     let player = await this.playersService.findOne(playerId);
     if (!player) {
       return 'Player not found';
     }
+
+    //Vérifier que le joueur a assez d'argent pour rejoindre la table
+    if (player.money < 10) {
+      return 'Not enough money';
+    }
+
+    //Vérifier que le joueur n'est pas déjà dans la table
+    if (this.tables[tableId].players.some((p) => p.id === playerId)) {
+      return `You are already in the table ${tableId}`;
+    }
     this.tables[tableId].players.push(player);
-    this.startGame(tableId, playerId);
+    await this.startGame(tableId, playerId);
     return this.tables[tableId];
   }
 
@@ -84,9 +88,10 @@ export class TablesService {
 
   async blinds(tableId: number, playerId: number, amount: number) {
     // Récupérer le joueur depuis la base de données
-    const player = await this.playersService.findOne(playerId);
+
+    const player = this.tables[tableId].players.find((p) => p.id === playerId);
     if (!player) {
-      throw new Error(`Player ${playerId} not found`);
+      return `Player ${playerId} not found`;
     }
 
     // Vérifier si le joueur a assez d'argent
@@ -95,24 +100,22 @@ export class TablesService {
     }
 
     // Mettre à jour le porte-monnaie du joueur
-    const newMoney = player.money - amount;
-    console.log("playerId", playerId, "newMoney", newMoney);
-
-    // Ajouter la mise au joueur
     player.bet = amount;
-    player.money = newMoney;
+    player.money = player.money - amount;
+    player.state = "waiting";
+    if (!player.isAI) {
+      await this.playerRepository.update(playerId, { money: player.money });
+      await this.playerRepository.save(player);
+    }
 
     // Mettre à jour la mise actuelle à la table
     this.tables[tableId].currentBet = amount;
-    //Mettre à jour le player dans la table
-    this.tables[tableId].players = this.tables[tableId].players.map((p) => {
-      if (p.id === playerId) {
-        return player;
-      }
-      return p;
-    });
+    this.tables[tableId].pot += amount;
 
-    return `This action adds the blinds to the table ${tableId}`;
+    //Mettre à jour le player dans la table
+    this.tables[tableId].players[this.tables[tableId].players.findIndex(p => p.id === playerId)] = player;
+
+    return this.tables[tableId];
   }
   // Actiopn de passer
   fold(tableId: number, playerId: number) {
@@ -126,18 +129,18 @@ export class TablesService {
     }
 
     player.state = 'fold';
-    return `This action folds the player ${playerId} on the table ${tableId}`;
+    return this.tables[tableId];
   }
 
   // Action de suivre la mise
   async call(tableId: number, playerId: number, amount: number = 0) {
     if (!this.tables[tableId]) {
-      throw new Error(`Table ${tableId} not found`);
+      return `Table ${tableId} not found`;
     }
 
     const player = this.tables[tableId].players.find((p) => p.id === playerId);
     if (!player) {
-      throw new Error(`Player ${playerId} not found at table ${tableId}`);
+      return `Player ${playerId} not found at table ${tableId}`;
     }
 
     if (player.money < amount) {
@@ -146,12 +149,17 @@ export class TablesService {
 
     // Mettre à jour le porte-monnaie
     player.money -= amount;
-    await this.playerRepository.update(playerId, { money: player.money });
-
-    // Ajouter la mise
     player.bet = amount;
+    if (!player.isAI) {
+      await this.playerRepository.update(playerId, { money: player.money });
+      await this.playerRepository.save(player);
+    }
 
-    return `This action calls the bet on the table ${tableId}`;
+    console.log("player who called", player);
+    this.tables[tableId].pot += amount;
+    this.tables[tableId].players[this.tables[tableId].players.findIndex(p => p.id === playerId)] = player;
+
+    return this.tables[tableId];
   }
 
   //  Action de relancer la mise
@@ -172,11 +180,12 @@ export class TablesService {
     // Mettre à jour le porte-monnaie
     player.money -= amount;
     await this.playerRepository.update(playerId, { money: player.money });
+    await this.playerRepository.save(player);
 
     // Ajouter la mise
     player.bet = amount;
 
-    return `This action raises the bet on the table ${tableId}`;
+    return this.tables[tableId];
   }
 
   //  Action de checker la mise
@@ -191,7 +200,7 @@ export class TablesService {
     }
 
     // Dans un vrai poker, "check" ne change pas la mise actuelle, donc on ne touche pas à player.bet
-    return `This action checks the bet on the table ${tableId}`;
+    return this.tables[tableId];
   }
 
   // Action de quitter la table
@@ -217,17 +226,18 @@ export class TablesService {
     return this.tables;
   }
 
-  startGame(tableId: number, currentPlayerId: number) {
+  async startGame(tableId: number, currentPlayerId: number) {
     let table = this.tables[tableId];
     table.currentRound = 1;
     // Ajouter autant d'IA que nécessaire pour commencer la partie
-    this.generateAI(tableId, currentPlayerId, 3);
+    await this.generateAI(tableId, currentPlayerId, 2);
 
     // Désigner un joueur comme dealer
     let players = table.players;
     if (players.length > 1) {
       let dealerPosition = Math.floor(Math.random() * players.length);
       players[dealerPosition].state = "dealer";
+      table.dealerIndex = dealerPosition;
     }
 
     // Distribuer les 2 cartes à chaque joueur
@@ -301,12 +311,9 @@ export class TablesService {
     // this.tables[tableId].currentPlayer = 0;
   }
 
-  generateAI(tableId: number, currentPlayerId: number, players_number: number) {
-    let currentPlayersCount = this.tables[tableId].players.length;
-    let IA_needed = players_number - currentPlayersCount;
-
-    for (let i = 0; i < IA_needed; i++) {
-      let player = this.playersService.createPlayer(`AI${i}`);
+  async generateAI(tableId: number, currentPlayerId: number, players_number: number) {
+    for (let i = 0; i < players_number; i++) {
+      let player = await this.playersService.createPlayer(`AI${i}`, this.tables[tableId]);
       const playerDTO = new PlayerDto({
         username: player.username,
         hand: player.id === currentPlayerId ? player.hand : undefined,
@@ -316,8 +323,6 @@ export class TablesService {
   }
 
   processAIMove(tableId: number, player: Player) {
-    // Logique de l'IA
-
     let table = this.tables[tableId];
 
     // Si c'est le premier tour et que le joueur est small_blind ou big_blind, il doit jouer la blinde
@@ -325,14 +330,39 @@ export class TablesService {
       let blindAmount = player.state === "small_blind" ? 5 : 10;
       console.log(`Player ${player.username} is playing ${player.state} with amount ${blindAmount}`);
       this.blinds(tableId, player.id, blindAmount);
-    } else {
-      // Sinon, on simule une action aléatoire
-      let actions = ['fold', 'call', 'raise', 'check'];
-      let randomAction = actions[Math.floor(Math.random() * actions.length)];
-      console.log(`Player ${player.username} is playing ${randomAction} with amount`);
-      this.actions(tableId, player.id, randomAction);
+      return;
     }
+
+    // Déterminer les actions possibles selon l'état actuel de la partie
+    let possibleActions: string[] = [];
+
+    if (player.bet < table.currentBet) {
+      // Le joueur doit au moins égaliser la mise
+      possibleActions = ['fold', 'call', 'raise'];
+    } else {
+      // Le joueur a déjà misé au niveau de la mise courante
+      possibleActions = ['check', 'raise'];
+    }
+
+    // Sélection aléatoire d'une action parmi les options possibles
+    let randomAction = possibleActions[Math.floor(Math.random() * possibleActions.length)];
+
+    // Gestion spécifique de "raise" : ajout d'un montant aléatoire
+    let amount = 0;
+    if (randomAction === 'raise') {
+      let minRaise = table.currentBet * 2; // Le minimum est souvent au moins le double de la big blind
+      let maxRaise = table.currentBet * 4; // On fixe un maximum arbitraire de 4 fois la mise courante pour éviter des mises trop élevées
+      amount = Math.floor(Math.random() * (maxRaise - minRaise + 1)) + minRaise; // Valeur entre minRaise et maxRaise
+    }
+
+    if (player.state === "dealer") {
+      table.currentRound++;
+    }
+
+    console.log(`Player ${player.username} is playing ${randomAction} ${amount > 0 ? "with amount " + amount : ""}`);
+    this.actions(tableId, player.id, randomAction, amount > 0 ? amount : undefined);
   }
+
 
   processHumanMove(tableId: number, playerId: number, action: string, amount?: number) {
     // Logique du joueur humain
@@ -356,10 +386,14 @@ export class TablesService {
     //APRES NIMPORTE QUELLE ACTION, FAIRE JOUER LES IA ET VERIFIER SI LA MANCHE EST TERMINEE
     table.currentPlayerIndex = (table.currentPlayerIndex + 1) % table.players.length;
     this.playRound(tableId);
-
+    if (player?.state === "dealer") {
+      table.currentRound++;
+    }
+    return table;
   }
 
   playRound(tableId: number) {
+    console.log("Playing round");
     let table = this.tables[tableId];
     while (table.players[table.currentPlayerIndex]?.isAI) {
       // TODO : L'instance de player envoyée à processAIMove n'est pas la même que table.currentPlayer

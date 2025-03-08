@@ -52,12 +52,13 @@ export class TablesController {
   }
 
   @Get(':id/actions/:action')
+  @Get(':id/actions/:action/:amount')
   @ApiResponse({ status: 201, description: 'The record has been successfully created.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
-  act(@Param('id') tableId: number, @Param('action') action: string, @Request() req: any) {
-    console.log("AAA")
+  act(@Request() req: any, @Param('id') tableId: number, @Param('action') action: string, @Param('amount') amount?: string) {
     const playerId = req.player.sub;
-    return this.tablesService.processHumanMove(tableId, playerId, action);
+    const parsedAmount = amount ? Number(amount) : undefined;
+    return this.tablesService.processHumanMove(tableId, playerId, action, parsedAmount);
     // return this.tablesService.actions(tableId, playerId, action);
   }
 
