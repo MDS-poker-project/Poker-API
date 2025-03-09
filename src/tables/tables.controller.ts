@@ -34,7 +34,6 @@ export class TablesController {
     return this.tablesService.join(tableId, playerId);
   }
 
-
   @Get(':id/leave')
   @ApiResponse({ status: 201, description: 'The record has been successfully created.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
@@ -56,8 +55,6 @@ export class TablesController {
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   actionWithAmount(@Request() req: any, @Param('id') tableId: number, @Param('action') action: string, @Param('amount') amount?: string) {
     const playerId = req.player.sub;
-    console.log('amount', amount);
-    console.log("amount type", typeof amount);
     const parsedAmount = amount ? Number(amount) : undefined;
     return this.tablesService.processHumanMove(tableId, playerId, action, parsedAmount);
     // return this.tablesService.actions(tableId, playerId, action);
