@@ -290,6 +290,13 @@ export class TablesService {
 
   async processAIMove(tableId: number, player: Player): Promise<string | Table> {
     let table = this.tables[tableId];
+    let isDealer = this.tables[tableId].dealerIndex === table.players.findIndex(p => p.id === player.id);
+
+    if (player.state === "fold") {
+      if (isDealer) this.updateRiver(tableId);
+      return table;
+    }
+
     if (this.tables[tableId].players.every((p) => p.state === "fold" || p.id === player.id)) {
       const potWon = this.tables[tableId].pot;
       this.resetTable(tableId);
@@ -317,12 +324,18 @@ export class TablesService {
 
     const endMsg = this.checkGameEnd(tableId);
     if (endMsg) return endMsg;
+
+    if (isDealer) {
+      this.updateRiver(tableId);
+      table.currentRound++;
+    }
     return table;
   }
 
   async processHumanMove(tableId: number, playerId: number, action: string, amount?: number): Promise<string | Table> {
     let table = this.tables[tableId];
     let player = table.players.find(p => p.id === playerId);
+    let isDealer = this.tables[tableId].dealerIndex === table.players.findIndex(p => p.id === playerId);
     if (!player) return `Player ${playerId} not found`;
     if (table.players[table.currentPlayerIndex]?.id !== playerId) {
       return "Ce n'est pas votre tour";
@@ -344,8 +357,10 @@ export class TablesService {
         return "Vous n'avez pas assez d'argent\n (votre argent : " + player.money + ")";
       }
     }
+
     const actionResult = await this.actions(tableId, playerId, action, amount);
-    if (typeof actionResult === 'string') return actionResult; // Un message de fin a été renvoyé
+    actionResult instanceof Table ? null : console.log(actionResult);
+    if (typeof actionResult === 'string') return actionResult; // Un message de fin ou d'erreur a été renvoyé
 
     const endMsg = this.checkGameEnd(tableId);
     if (endMsg) return endMsg;
@@ -353,7 +368,8 @@ export class TablesService {
     if (table.players[table.currentPlayerIndex]?.isAI) {
       return await this.playRound(tableId);
     }
-    if (player?.state === "dealer") {
+    if (isDealer) {
+      this.updateRiver(tableId);
       table.currentRound++;
     }
     return table;
@@ -362,14 +378,22 @@ export class TablesService {
   async playRound(tableId: number): Promise<string | Table> {
     let table = this.tables[tableId];
     while (table.players[table.currentPlayerIndex]?.isAI) {
-      if (table.players[table.currentPlayerIndex]?.state !== "fold") {
-        const result = await this.processAIMove(tableId, table.players[table.currentPlayerIndex]);
-        if (typeof result === 'string') {
-          return result;
-        }
+      const result = await this.processAIMove(tableId, table.players[table.currentPlayerIndex]);
+      if (typeof result === 'string') {
+        return result;
       }
+
       table.currentPlayerIndex = (table.currentPlayerIndex + 1) % table.players.length;
     }
     return table;
+  }
+
+  private updateRiver(tableId: number): void {
+    let table = this.tables[tableId];
+    this.deckService.burnCard(table.deck);
+    const card = this.deckService.pickCard(table.deck);
+    if (card) {
+      table.river.push(card);
+    }
   }
 }
