@@ -7,14 +7,8 @@ export class Table {
     constructor(id: number) {
         this.id = id;
         this.name = "Table " + id;
-        this.deck = new Deck(),
-        this.players = [] as Player[],
-        this.river = [] as Card[],
-        this.pot = 0,
-        this.currentBet = 0
-        this.currentTurn = 0
-        this.round = 0
-        this.currentRound = 0
+        this.deck = new Deck()
+        this.players = [] as Player[]
     }
 
     id: number
