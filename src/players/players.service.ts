@@ -103,7 +103,7 @@ export class PlayersService {
   async motherlode(playerId: number) {
     let player = await this.repo.findOne({ where: { id: playerId } });
     if (player) {
-      player.money += 100;
+      player.money += 1000;
       return this.repo.save(player);
     }
     return;

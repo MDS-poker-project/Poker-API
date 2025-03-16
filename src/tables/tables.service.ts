@@ -10,6 +10,7 @@ import { Player } from 'src/entities/player.entity';
 @Injectable()
 export class TablesService {
   tables: Table[] = [];
+  MAX_ROUNDS = 4; // 0: pré-flop, 1: flop, 2: turn, 3: river
 
   constructor(
     @InjectRepository(Player)
@@ -25,6 +26,7 @@ export class TablesService {
   createTable() {
     let table = new Table(this.tables.length);
     table.deck = this.deckService.shuffle(this.deckService.generateDeck());
+    table.currentRound = 0;
     this.tables.push(table);
   }
 
@@ -204,7 +206,7 @@ export class TablesService {
 
   async startGame(tableId: number, currentPlayerId: number) {
     let table = this.tables[tableId];
-    table.currentRound = 1;
+    table.currentRound = 0;
     await this.generateAI(tableId, currentPlayerId, 2);
     let players = table.players;
     if (players.length > 1) {
@@ -212,7 +214,7 @@ export class TablesService {
       players[dealerPosition].state = "dealer";
       table.dealerIndex = dealerPosition;
     }
-    table.players.forEach(player => {
+    players.forEach(player => {
       for (let i = 0; i < 2; i++) {
         const card = this.deckService.pickCard(table.deck);
         if (card) {
@@ -222,17 +224,9 @@ export class TablesService {
         }
       }
     });
-    this.deckService.burnCard(table.deck);
-    for (let i = 0; i < 3; i++) {
-      const card = this.deckService.pickCard(table.deck);
-      if (card) {
-        table.river.push(card);
-      } else {
-        return "No more cards in the deck";
-      }
-    }
     this.assignBlinds(tableId);
     table.currentPlayerIndex = players.findIndex(player => player.state === "small_blind");
+    // On démarre le round de mises en pré-flop
     this.playRound(tableId);
   }
 
@@ -293,7 +287,11 @@ export class TablesService {
     let isDealer = this.tables[tableId].dealerIndex === table.players.findIndex(p => p.id === player.id);
 
     if (player.state === "fold") {
-      if (isDealer) this.updateRiver(tableId);
+      if (isDealer) {
+        // Passage au round suivant si le dealer a terminé son tour
+        const next = this.nextRound(tableId);
+        if (typeof next === 'string') return next;
+      }
       return table;
     }
 
@@ -303,7 +301,7 @@ export class TablesService {
       return `Everyone folded, player ${player.id} wins ${potWon}`;
     }
 
-    if (table.currentRound === 1 && (player.state === "small_blind" || player.state === "big_blind")) {
+    if (table.currentRound === 0 && (player.state === "small_blind" || player.state === "big_blind")) {
       await this.blinds(tableId, player.id, player.state === "small_blind" ? 5 : 10);
       return table;
     }
@@ -315,19 +313,19 @@ export class TablesService {
     let raiseAmount = 0;
     if (randomAction === 'raise') {
       let minRaise = table.currentBet * 2;
-      let maxRaise = table.currentBet * 4;
+      let maxRaise = table.currentBet * 4 || player.money;
       raiseAmount = Math.floor(Math.random() * (maxRaise - minRaise + 1)) + minRaise;
     }
 
     const actionResult = await this.actions(tableId, player.id, randomAction, randomAction === 'raise' ? raiseAmount : undefined);
-    if (typeof actionResult === 'string') return actionResult; // Un message de fin a été renvoyé
+    if (typeof actionResult === 'string') return actionResult; // Message de fin ou erreur
 
     const endMsg = this.checkGameEnd(tableId);
     if (endMsg) return endMsg;
 
     if (isDealer) {
-      this.updateRiver(tableId);
-      table.currentRound++;
+      const next = this.nextRound(tableId);
+      if (typeof next === 'string') return next;
     }
     return table;
   }
@@ -340,7 +338,7 @@ export class TablesService {
     if (table.players[table.currentPlayerIndex]?.id !== playerId) {
       return "Ce n'est pas votre tour";
     }
-    if (table.currentRound === 1 && ((player.state === "small_blind" && action !== "small_blind") || (player.state === "big_blind" && action !== "big_blind"))) {
+    if (table.currentRound === 0 && ((player.state === "small_blind" && action !== "small_blind") || (player.state === "big_blind" && action !== "big_blind"))) {
       return `Vous devez jouer la ${player.state === "small_blind" ? "petite" : "grande"} blinde`;
     }
     if (action === "check" && player.bet < table.currentBet) {
@@ -359,8 +357,7 @@ export class TablesService {
     }
 
     const actionResult = await this.actions(tableId, playerId, action, amount);
-    actionResult instanceof Table ? null : console.log(actionResult);
-    if (typeof actionResult === 'string') return actionResult; // Un message de fin ou d'erreur a été renvoyé
+    if (typeof actionResult === 'string') return actionResult; // Message de fin ou d'erreur
 
     const endMsg = this.checkGameEnd(tableId);
     if (endMsg) return endMsg;
@@ -369,8 +366,8 @@ export class TablesService {
       return await this.playRound(tableId);
     }
     if (isDealer) {
-      this.updateRiver(tableId);
-      table.currentRound++;
+      const next = this.nextRound(tableId);
+      if (typeof next === 'string') return next;
     }
     return table;
   }
@@ -382,18 +379,44 @@ export class TablesService {
       if (typeof result === 'string') {
         return result;
       }
-
       table.currentPlayerIndex = (table.currentPlayerIndex + 1) % table.players.length;
     }
     return table;
   }
 
-  private updateRiver(tableId: number): void {
+  private nextRound(tableId: number): string | void {
     let table = this.tables[tableId];
-    this.deckService.burnCard(table.deck);
-    const card = this.deckService.pickCard(table.deck);
-    if (card) {
-      table.river.push(card);
+    if (table.currentRound === 0) {
+      // Passage du pré-flop au flop : distribution de 3 cartes
+      table.currentRound++;
+      this.deckService.burnCard(table.deck);
+      for (let i = 0; i < 3; i++) {
+        const card = this.deckService.pickCard(table.deck);
+        if (card) {
+          table.river.push(card);
+        } else {
+          return "No more cards in the deck";
+        }
+      }
+    } else if (table.currentRound === 1 || table.currentRound === 2) {
+      // Turn et River : distribution d'une seule carte
+      table.currentRound++;
+      this.deckService.burnCard(table.deck);
+      const card = this.deckService.pickCard(table.deck);
+      if (card) {
+        table.river.push(card);
+      } else {
+        return "No more cards in the deck";
+      }
+    } else {
+      return this.finishGame(tableId);
     }
+  }
+
+  finishGame(tableId: number): string {
+    let table = this.tables[tableId];
+    const msg = "Game finished. Showdown not implemented.";
+    this.resetTable(tableId);
+    return msg;
   }
 }
