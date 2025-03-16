@@ -9,6 +9,12 @@ export class PlayersController {
     private readonly playersService: PlayersService,
   ) { }
 
+
+  @Get(':username')
+  findByUsername(@Param('username') username: string) {
+    return this.playersService.findByUsername(username);
+  }
+
   @Get('')
   findAll(@Request() req: any) {
     let player = req.player;
@@ -20,10 +26,4 @@ export class PlayersController {
     let player = req.player;
     return this.playersService.motherlode(player.sub);
   }
-
-  @Get(':username')
-  findByUsername(@Param('username') username: string) {
-    return this.playersService.findByUsername(username);
-  }
-
 }
