@@ -5,6 +5,7 @@ import { Player } from 'src/entities/player.entity';
 import * as bcrypt from 'bcrypt';
 import { BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Table } from 'src/tables/entities/table.entity';
 
 @Injectable()
 export class PlayersService {
@@ -53,27 +54,56 @@ export class PlayersService {
     ];
   }
 
-  async setAction(name: string, id: number) { //Récupérer l'id du joueur quand jwt
+  async setAction(name: string, id: number) {
     const user = await this.repo.findOne({ where: { id: id } });
     if (user == undefined) {
       throw new BadRequestException("User not found");
     }
     user.state = name;
-    this.repo.save(user);
+    // Supprimer la sauvegarde pour ne pas persister le state dynamique
+    // this.repo.save(user);
   }
 
-  createPlayer(name: string): Player {
+  async createAIPlayer(name: string, table: Table): Promise<Player> {
     // Créer directement une instance de Player sans passer par le repository
     const player = new Player();
     player.username = name;
     player.isAI = true;
+    // Générer un ID unique
+    let idExists = true;
+    while (idExists) {
+      const newId = Math.floor(Math.random() * 100); // Generate a random ID
+      const existingPlayer = await this.repo.findOne({ where: { id: newId } });
+      const existingAIPlayer = table ? table.players.find(player => player.id === newId && player.isAI) : undefined;
+      if (!existingPlayer && !existingAIPlayer) {
+        player.id = newId;
+        idExists = false;
+      }
+      if (!existingPlayer) {
+        player.id = newId;
+        idExists = false;
+      }
+    }
+
+    return player;
+  }
+
+  async createPlayer(playerId: number): Promise<Player> {
+    const player = new Player();
+    const playerData = await this.repo.findOne({ where: { id: playerId } });
+    player.id = playerId;
+    if (!playerData) {
+      throw new BadRequestException("Player not found");
+    }
+    player.username = playerData.username;
+    player.money = playerData.money;
     return player;
   }
 
   async motherlode(playerId: number) {
     let player = await this.repo.findOne({ where: { id: playerId } });
     if (player) {
-      player.money += 100;
+      player.money += 1000;
       return this.repo.save(player);
     }
     return;

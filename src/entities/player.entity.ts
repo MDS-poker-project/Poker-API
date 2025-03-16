@@ -8,7 +8,6 @@ import { Entity, Column, PrimaryGeneratedColumn, AfterInsert } from 'typeorm';
 export class Player {
 
     @PrimaryGeneratedColumn()
-    // @Exclude()
     id: number
 
     @Column()

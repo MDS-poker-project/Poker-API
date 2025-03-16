@@ -21,7 +21,7 @@ import { ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 })
 @ApiResponse({ status: 403, description: 'Forbidden.' })
 export class TablesController {
-  constructor(private readonly tablesService: TablesService) {}
+  constructor(private readonly tablesService: TablesService) { }
 
   @Get('')
   @ApiResponse({
@@ -65,6 +65,24 @@ export class TablesController {
     return this.tablesService.leave(tableId, playerId);
   }
 
+  @Get(':id/actions')
+  @ApiResponse({ status: 201, description: 'The record has been successfully created.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  actions(@Param('id') tableId: number, @Request() req: any) {
+    const playerId = req.player.sub;
+    // return this.tablesService.actions(tableId, playerId);
+  }
+
+  @Get(':id/actions/:action/:amount')
+  @ApiResponse({ status: 201, description: 'The record has been successfully created.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  actionWithAmount(@Request() req: any, @Param('id') tableId: number, @Param('action') action: string, @Param('amount') amount?: string) {
+    const playerId = req.player.sub;
+    const parsedAmount = amount ? Number(amount) : undefined;
+    return this.tablesService.processHumanMove(tableId, playerId, action, parsedAmount);
+    // return this.tablesService.actions(tableId, playerId, action);
+  }
+
   @Get(':id/actions/:action')
   @ApiResponse({
     status: 201,
@@ -76,8 +94,8 @@ export class TablesController {
     @Param('action') action: string,
     @Request() req: any,
   ) {
-    console.log('AAA');
     const playerId = req.player.sub;
-    return this.tablesService.actions(tableId, playerId, action);
+    return this.tablesService.processHumanMove(tableId, playerId, action);
+    // return this.tablesService.actions(tableId, playerId, action);
   }
 }
