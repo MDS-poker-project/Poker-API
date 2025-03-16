@@ -54,7 +54,7 @@ export class TablesService {
     }
     this.tables[tableId].players.push(player);
     await this.startGame(tableId, playerId);
-    return this.tables[tableId];
+    return this.formatResponse(tableId, playerId);
   }
 
   async actions(tableId: number, playerId: number, action: string, amount?: number) {
@@ -83,7 +83,7 @@ export class TablesService {
           return this.blinds(tableId, playerId, 10);
         default:
           console.log('Action not found');
-          return 'Action not found';
+          return { message: 'Action not found', possibleActions: [] };
       }
     }
   }
@@ -99,14 +99,14 @@ export class TablesService {
     player.bet = amount;
     player.money = player.money - amount;
     player.state = "waiting";
-    if (!player.isAI) {
+    if (!player.isAI && player.id) {
       await this.playerRepository.update(playerId, { money: player.money });
       await this.playerRepository.save(player);
     }
     this.tables[tableId].currentBet = amount;
     this.tables[tableId].pot += amount;
     this.tables[tableId].players[this.tables[tableId].players.findIndex(p => p.id === playerId)] = player;
-    return this.tables[tableId];
+    return this.formatResponse(tableId, playerId);
   }
 
   fold(tableId: number, playerId: number) {
@@ -121,7 +121,7 @@ export class TablesService {
     this.tables[tableId].players[this.tables[tableId].players.findIndex(p => p.id === playerId)] = player;
     let endMsg = this.checkGameEnd(tableId);
     if (endMsg) return endMsg;
-    return this.tables[tableId];
+    return this.formatResponse(tableId, playerId);
   }
 
   async call(tableId: number, playerId: number, amount: number = 0) {
@@ -139,7 +139,7 @@ export class TablesService {
     player.money -= diff;
     player.bet = this.tables[tableId].currentBet;
     player.state = "waiting";
-    if (!player.isAI) {
+    if (playerId && !player.isAI) {
       await this.playerRepository.update(playerId, { money: player.money });
       await this.playerRepository.save(player);
     }
@@ -147,7 +147,7 @@ export class TablesService {
     this.tables[tableId].players[this.tables[tableId].players.findIndex(p => p.id === playerId)] = player;
     let endMsg = this.checkGameEnd(tableId);
     if (endMsg) return endMsg;
-    return this.tables[tableId];
+    return this.formatResponse(tableId, playerId);
   }
 
   async raise(tableId: number, playerId: number, amount: number = 0) {
@@ -173,7 +173,7 @@ export class TablesService {
     this.tables[tableId].players[this.tables[tableId].players.findIndex(p => p.id === playerId)] = player;
     let endMsg = this.checkGameEnd(tableId);
     if (endMsg) return endMsg;
-    return this.tables[tableId];
+    return this.formatResponse(tableId, playerId);
   }
 
   check(tableId: number, playerId: number) {
@@ -184,7 +184,7 @@ export class TablesService {
     if (!player) {
       throw new NotFoundException(`Player ${playerId} not found at table ${tableId}`);
     }
-    return this.tables[tableId];
+    return this.formatResponse(tableId, playerId);
   }
 
   leave(tableId: number, playerId: number) {
@@ -282,7 +282,7 @@ export class TablesService {
     return undefined;
   }
 
-  async processAIMove(tableId: number, player: Player): Promise<string | Table> {
+  async processAIMove(tableId: number, player: Player): Promise<string | { table: Table, possibleActions: string[] }> {
     let table = this.tables[tableId];
     let isDealer = this.tables[tableId].dealerIndex === table.players.findIndex(p => p.id === player.id);
 
@@ -292,7 +292,7 @@ export class TablesService {
         const next = this.nextRound(tableId);
         if (typeof next === 'string') return next;
       }
-      return table;
+      return this.formatResponse(tableId, player.id);
     }
 
     if (this.tables[tableId].players.every((p) => p.state === "fold" || p.id === player.id)) {
@@ -303,7 +303,7 @@ export class TablesService {
 
     if (table.currentRound === 0 && (player.state === "small_blind" || player.state === "big_blind")) {
       await this.blinds(tableId, player.id, player.state === "small_blind" ? 5 : 10);
-      return table;
+      return this.formatResponse(tableId, player.id);
     }
 
     let possibleActions: string[] = (player.bet < table.currentBet)
@@ -327,10 +327,10 @@ export class TablesService {
       const next = this.nextRound(tableId);
       if (typeof next === 'string') return next;
     }
-    return table;
+    return this.formatResponse(tableId, player.id);
   }
 
-  async processHumanMove(tableId: number, playerId: number, action: string, amount?: number): Promise<string | Table> {
+  async processHumanMove(tableId: number, playerId: number, action: string, amount?: number): Promise<string | { table: Table, possibleActions: string[] }> {
     let table = this.tables[tableId];
     let player = table.players.find(p => p.id === playerId);
     let isDealer = this.tables[tableId].dealerIndex === table.players.findIndex(p => p.id === playerId);
@@ -369,10 +369,10 @@ export class TablesService {
       const next = this.nextRound(tableId);
       if (typeof next === 'string') return next;
     }
-    return table;
+    return this.formatResponse(tableId, playerId);
   }
 
-  async playRound(tableId: number): Promise<string | Table> {
+  async playRound(tableId: number): Promise<string | { table: Table; possibleActions: string[] }> {
     let table = this.tables[tableId];
     while (table.players[table.currentPlayerIndex]?.isAI) {
       const result = await this.processAIMove(tableId, table.players[table.currentPlayerIndex]);
@@ -381,7 +381,7 @@ export class TablesService {
       }
       table.currentPlayerIndex = (table.currentPlayerIndex + 1) % table.players.length;
     }
-    return table;
+    return this.formatResponse(tableId, table.players[table.currentPlayerIndex].id);
   }
 
   private nextRound(tableId: number): string | void {
@@ -419,4 +419,48 @@ export class TablesService {
     this.resetTable(tableId);
     return msg;
   }
+
+  private getPossibleActions(table: Table, playerId: number): string[] {
+    const player = table.players.find(p => p.id === playerId);
+    if (!player) return [];
+
+    const possibleActions: string[] = [];
+
+    if (player.state === "fold") {
+      return []; // Aucune action possible s'il s'est couché
+    }
+
+    if (table.currentRound === 0 && (player.state === "small_blind" || player.state === "big_blind")) {
+      possibleActions.push(player.state);
+      return possibleActions;
+    }
+
+    if (player.bet < table.currentBet && player.money >= (table.currentBet - player.bet)) {
+      possibleActions.push("call");
+    }
+
+    if (player.bet === table.currentBet) {
+      possibleActions.push("check");
+    }
+
+    if (player.money > (table.currentBet - player.bet)) {
+      possibleActions.push("raise");
+    }
+
+    possibleActions.push("fold");
+
+    possibleActions.push("leave");
+
+    return possibleActions;
+  }
+
+  private formatResponse(tableId: number, playerId: number): { table: Table, possibleActions: string[] } {
+    const table = this.tables[tableId];
+    return {
+      table: table,
+      possibleActions: this.getPossibleActions(table, playerId),
+    };
+  }
+
+
 }

@@ -10,7 +10,13 @@ import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 @ApiResponse({ status: 403, description: 'Forbidden.' })
 @Controller('player')
 export class PlayersController {
-  constructor(private readonly playersService: PlayersService) {}
+  constructor(private readonly playersService: PlayersService) { }
+
+
+  @Get(':username')
+  findByUsername(@Param('username') username: string) {
+    return this.playersService.findByUsername(username);
+  }
 
   @Get('')
   @ApiResponse({
@@ -32,15 +38,5 @@ export class PlayersController {
   motherlode(@Request() req: any) {
     let player = req.player;
     return this.playersService.motherlode(player.sub);
-  }
-
-  @Get(':username')
-  @ApiResponse({
-    status: 201,
-    description: 'The record has been successfully created.',
-  })
-  @ApiResponse({ status: 403, description: 'Forbidden.' })
-  findByUsername(@Param('username') username: string) {
-    return this.playersService.findByUsername(username);
   }
 }
