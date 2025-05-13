@@ -97,6 +97,7 @@ export class PlayersService {
     }
     player.username = playerData.username;
     player.money = playerData.money;
+    player.id = playerData.id;
     return player;
   }
 

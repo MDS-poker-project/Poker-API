@@ -42,6 +42,10 @@ export class TablesService {
     if (!this.tables[tableId]) {
       return `Table ${tableId} not found`;
     }
+    // Vérifier qu'il n'y a pas déjà un humain à la table
+    if (this.tables[tableId].players.some((p) => !p.isAI)) {
+      return `Un joueur humain est déjà présent à la table ${tableId}`;
+    }
     let player = await this.playersService.createPlayer(playerId);
     if (!player) {
       return 'Player not found';
@@ -57,8 +61,19 @@ export class TablesService {
     return this.formatResponse(tableId, playerId);
   }
 
+  async getActions(tableId: number, playerId: number) {
+    console.log("getActions", tableId, playerId);
+    if (!this.tables[tableId]) {
+      console.log('Table not found');
+      throw new NotFoundException(`Table ${tableId} not found`);
+    }
+    const table = this.tables[tableId];
+    return this.getPossibleActions(table, playerId);
+  }
+
   async actions(tableId: number, playerId: number, action: string, amount?: number) {
     let player = this.tables[tableId].players.find((p) => p.id === playerId);
+    console.log("playerId", playerId, "action", action, "amount", amount);
     if (!player) {
       return `Player ${playerId} not found`;
     }
@@ -129,6 +144,7 @@ export class TablesService {
       return `Table ${tableId} not found`;
     }
     const player = this.tables[tableId].players.find((p) => p.id === playerId);
+    console.log("playerId", playerId, "amount", amount);
     if (!player) {
       return `Player ${playerId} not found at table ${tableId}`;
     }
@@ -206,6 +222,8 @@ export class TablesService {
 
   async startGame(tableId: number, currentPlayerId: number) {
     let table = this.tables[tableId];
+    // On garde uniquement le joueur humain déjà présent
+    table.players = table.players.filter(p => !p.isAI);
     table.currentRound = 0;
     await this.generateAI(tableId, currentPlayerId, 2);
     let players = table.players;
@@ -218,7 +236,7 @@ export class TablesService {
       for (let i = 0; i < 2; i++) {
         const card = this.deckService.pickCard(table.deck);
         if (card) {
-          player.hand.push(card);
+          player.hand?.push(card);
         } else {
           return "No more cards in the deck";
         }

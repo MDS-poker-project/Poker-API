@@ -52,7 +52,7 @@ export class TablesController {
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   join(@Param('id') tableId: number, @Request() req: any) {
-    const playerId = req.player.sub;
+    const playerId = req.player.userId;
     return this.tablesService.join(tableId, playerId);
   }
 
@@ -63,7 +63,7 @@ export class TablesController {
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   leave(@Param('id') tableId: number, @Request() req: any) {
-    const playerId = req.player.sub;
+    const playerId = req.player.userId;
     return this.tablesService.leave(tableId, playerId);
   }
 
@@ -71,15 +71,15 @@ export class TablesController {
   @ApiResponse({ status: 201, description: 'The record has been successfully created.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   actions(@Param('id') tableId: number, @Request() req: any) {
-    const playerId = req.player.sub;
-    // return this.tablesService.actions(tableId, playerId);
+    const playerId = req.player.userId;
+    return this.tablesService.getActions(tableId, playerId);
   }
 
   @Get(':id/actions/:action/:amount')
   @ApiResponse({ status: 201, description: 'The record has been successfully created.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   actionWithAmount(@Request() req: any, @Param('id') tableId: number, @Param('action') action: string, @Param('amount') amount?: string) {
-    const playerId = req.player.sub;
+    const playerId = req.player.userId;
     const parsedAmount = amount ? Number(amount) : undefined;
     return this.tablesService.processHumanMove(tableId, playerId, action, parsedAmount);
     // return this.tablesService.actions(tableId, playerId, action);
@@ -96,7 +96,7 @@ export class TablesController {
     @Param('action') action: string,
     @Request() req: any,
   ) {
-    const playerId = req.player.sub;
+    const playerId = req.player.userId;
     return this.tablesService.processHumanMove(tableId, playerId, action);
     // return this.tablesService.actions(tableId, playerId, action);
   }
