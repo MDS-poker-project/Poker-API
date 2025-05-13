@@ -11,6 +11,7 @@ import { TablesService } from './tables.service';
 import { FilterPlayerHandInterceptor } from 'src/player-interceptor/player-interceptor.interceptor';
 import { UseInterceptors } from '@nestjs/common';
 import { ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Public } from 'src/decorators/public.decorator';
 
 @ApiBearerAuth()
 @Controller('tables')
@@ -23,6 +24,7 @@ import { ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 export class TablesController {
   constructor(private readonly tablesService: TablesService) { }
 
+  @Public()
   @Get('')
   @ApiResponse({
     status: 201,
