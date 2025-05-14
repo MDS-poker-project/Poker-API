@@ -14,11 +14,15 @@ export class FilterPlayerHandInterceptor implements NestInterceptor {
                     data.table.players = data.table.players.map((player: any) => {
                         // Toujours retirer le password
                         let { password, hand, ...rest } = player;
-                        // Si le joueur connecté, on restaure sa main, sinon on la garde supprimée
+                        // Si le joueur connecté, on garde sa main, sinon on l'anonymise
                         if (currentPlayerId && player.id === currentPlayerId) {
                             return { ...rest, hand };
                         }
-                        return rest;
+                        // Anonymiser la main : même nombre de cartes, mais valeurs cachées
+                        const anonymizedHand = Array.isArray(hand)
+                            ? hand.map(() => ({ rank: 'X', suit: 'X' }))
+                            : [];
+                        return { ...rest, hand: anonymizedHand };
                     });
                 }
                 return data;

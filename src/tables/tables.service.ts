@@ -149,6 +149,14 @@ export class TablesService {
       return `Player ${playerId} not found at table ${tableId}`;
     }
     if (player.money < amount) {
+      // Pour les IA : si pas assez d'argent, elles doivent se coucher automatiquement
+      if (player.isAI) {
+        player.state = 'fold';
+        this.tables[tableId].players[this.tables[tableId].players.findIndex(p => p.id === playerId)] = player;
+        let endMsg = this.checkGameEnd(tableId);
+        if (endMsg) return endMsg;
+        return this.formatResponse(tableId, playerId);
+      }
       return 'Not enough money';
     }
     let diff = this.tables[tableId].currentBet - player.bet;
@@ -175,6 +183,14 @@ export class TablesService {
       throw new NotFoundException(`Player ${playerId} not found at table ${tableId}`);
     }
     if (player.money < amount) {
+      // Pour les IA : si pas assez d'argent, elles doivent se coucher automatiquement
+      if (player.isAI) {
+        player.state = 'fold';
+        this.tables[tableId].players[this.tables[tableId].players.findIndex(p => p.id === playerId)] = player;
+        let endMsg = this.checkGameEnd(tableId);
+        if (endMsg) return endMsg;
+        return this.formatResponse(tableId, playerId);
+      }
       return 'Not enough money';
     }
     let diff = amount - player.bet;

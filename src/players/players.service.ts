@@ -23,7 +23,9 @@ export class PlayersService {
     const hashedPassword = await bcrypt.hash(owner.password, salt);
 
     const newUser = this.repo.create({ username: owner.username, password: hashedPassword, state: "" });
+    console.log("New user created:", newUser);
     const savedUser = await this.repo.save(newUser);
+    console.log(savedUser);
     if (!savedUser) {
       throw new BadRequestException("User creation failed");
     }
