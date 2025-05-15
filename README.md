@@ -3,9 +3,9 @@
 ## Sommaire
 - [Description](#description)
 - [Technologies utilisées](#technologies-utilisées)
-- [Installation et démarrage](#demarrage)
-- [Routes de l'API](#routes)
-- [Fonctionnalités](#fonctionnalites)
+- [Installation et démarrage](#installation-et-démarrage)
+- [Routes de l'API](#routes-de-lapi)
+- [Fonctionnalités](#fonctionnalités)
 - [Auteurs](#auteurs)
 
 ## Description
@@ -21,6 +21,10 @@ Ce projet utilise les technologies suivantes :
 
 ## Installation et démarrage
 
+### ⚠️⚠️ Ce projet fonctionne de paire avec le front. Il est recommandé d'installer ce projet en conteneur via le repo : 
+
+```https://github.com/MDS-poker-project/poker-tools```
+
 ### 1. Prérequis
 Avant l'installation, assurez-vous d'avoir les éléments suivants :
 - Node.js
@@ -29,7 +33,7 @@ Avant l'installation, assurez-vous d'avoir les éléments suivants :
 ### 2. Clonez le projet :
 
 ```bash
-$ git clone https://github.com/benjamin-bou/Poker-API.git
+$ git clone https://github.com/MDS-poker-project/Poker-API.git
 ```
 
 ### 3. Installez les dépendances
